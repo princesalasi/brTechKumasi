@@ -104,7 +104,7 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 .mode .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform 260ms cubic-bezier(.3,1.25,.5,1); }
 @media (prefers-color-scheme: dark) { .mode .thumb { background: #4a4652; } }
 @media (prefers-reduced-motion: reduce) { .mode .thumb { transition: none; } }
-.mode[data-mode="appt"] .thumb, .mode[data-mode="momo"] .thumb { transform: translateX(100%); }
+.mode[data-mode="appt"] .thumb, .mode[data-mode="momo"] .thumb, .mode[data-mode="staff"] .thumb { transform: translateX(100%); }
 .mode.drag { cursor: grabbing; }
 .mode.drag .thumb { transition: none; }
 .mode button { position: relative; min-height: 44px; border: 0; background: none; font-size: 15px; font-weight: 500; color: var(--text2); cursor: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; letter-spacing: 0; }
@@ -411,6 +411,7 @@ details.f[open] > summary { margin-bottom: 12px; }
 
 <!-- ============ CUSTOMER BOOKING PAGE ============ -->
 <div id="book" hidden><main class="bookmain">
+  <div class="mode viewSwitch" role="radiogroup" aria-label="Client or staff" data-mode="client"><span class="thumb"></span><button type="button" role="radio" data-mode="client" aria-checked="true">Client</button><button type="button" role="radio" data-mode="staff" aria-checked="false" tabindex="-1">Staff</button></div>
   <div class="hero">
     <img class="logo" src="icon-192.png" alt="">
     <h1>BrowTech Kumasi</h1>
@@ -447,7 +448,6 @@ details.f[open] > summary { margin-bottom: 12px; }
     </section>
   </div>
   <div id="bkDone" hidden></div>
-  <a class="foot-link" href="#staff" id="staffLink">Staff login</a>
 </main>
 <div class="bookbar" id="bookbar" hidden><div class="in">
   <div class="sum" id="bkSum"><b>Choose a service</b>then a day and time</div>
@@ -457,6 +457,7 @@ details.f[open] > summary { margin-bottom: 12px; }
 
 <!-- ============ LOGIN ============ -->
 <div id="login" hidden><main>
+  <div class="mode viewSwitch" role="radiogroup" aria-label="Client or staff" data-mode="staff"><span class="thumb"></span><button type="button" role="radio" data-mode="client" aria-checked="false" tabindex="-1">Client</button><button type="button" role="radio" data-mode="staff" aria-checked="true">Staff</button></div>
   <img class="logo" src="icon-192.png" alt="">
   <h1 class="login-title">BrowTech Kumasi</h1>
   <p class="login-sub" id="loginSub">Who's using the app?</p>
@@ -474,7 +475,6 @@ details.f[open] > summary { margin-bottom: 12px; }
       <button class="btn" id="pinGo" type="button" disabled>Log in</button>
     </div>
   </div>
-  <a class="foot-link" href="#">← Customer booking page</a>
 </main></div>
 
 <!-- ============ APP ============ -->
@@ -608,6 +608,7 @@ details.f[open] > summary { margin-bottom: 12px; }
   <section class="tab" id="tab-more" hidden>
     <h1 class="large">More</h1>
     <div class="status" id="meLine"></div>
+    <div class="mode viewSwitch" role="radiogroup" aria-label="Client or staff" data-mode="staff"><span class="thumb"></span><button type="button" role="radio" data-mode="client" aria-checked="false" tabindex="-1">Client</button><button type="button" role="radio" data-mode="staff" aria-checked="true">Staff</button></div>
     <div class="card">
       <div class="row"><button class="btn secondary" id="changePinBtn" type="button">Change my PIN</button><button class="btn danger" id="logoutBtn" type="button">Log out</button></div>
     </div>
@@ -2246,7 +2247,6 @@ const waLink = (phone, text) => "https://wa.me/" + waNumber(phone) + (text ? "?t
 async function showBook() {
   $("login").hidden = true; $("app").hidden = true; $("book").hidden = false; $("bookbar").hidden = false;
   document.title = "BrowTech Kumasi – Book an appointment";
-  $("staffLink").textContent = session ? "Staff area (" + session.user.name + ")" : "Staff login";
   if (bk.sent) return;
   try {
     bk.info = await rpc("public_info", {});
@@ -2392,6 +2392,7 @@ $("bkSend").onclick = sendBooking;
 /* ================= which page: customer booking (default) or staff (#staff) ================= */
 const staffMode = () => location.hash === "#staff";
 function route() {
+  document.querySelectorAll(".viewSwitch").forEach(sw => setSwitch(sw, staffMode() ? "staff" : "client"));
   $("manifestLink").href = staffMode() ? "manifest.webmanifest" : "manifest-book.webmanifest";
   document.querySelectorAll(".sheet, .scrim").forEach(w => w.remove());
   if (!staffMode()) { clearInterval(pollTimer); showBook(); return; }
@@ -2510,6 +2511,7 @@ $("wkPay").onclick = walkinPay;
 $("wkDisc").addEventListener("input", updateWalkinPay);
 initSwitch($("modeSwitch"), setMode);
 initSwitch($("wkPaySwitch"), m => setSwitch($("wkPaySwitch"), m));
+document.querySelectorAll(".viewSwitch").forEach(sw => initSwitch(sw, m => { location.hash = m === "staff" ? "staff" : ""; }));
 $("cardIncome").onclick = () => { if (isAdmin()) todaySheet(); else if (!$("reqArea").hidden) $("reqHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); else toast("No requests waiting"); };
 $("cardAppts").onclick = () => { apptDay = today(); render(); $("apptHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); };
 $("seeAll").onclick = () => showTab("history");
