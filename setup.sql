@@ -60,6 +60,7 @@ begin
   end if;
 end $$;
 alter table browtech.services add column if not exists online boolean not null default true;  -- bookable on the customer page
+alter table browtech.services add column if not exists sort_order int;  -- admin's order; empty = after the arranged ones, by name
 
 -- Services done = income. One row per service. Never changed or deleted.
 create table if not exists browtech.sales (
@@ -440,7 +441,7 @@ language sql stable security definer set search_path = browtech, public as $$
   select json_build_object(
     'online_booking', c.online_booking, 'contact_phone', c.contact_phone, 'days_ahead', c.days_ahead,
     'hours', c.hours, 'today', browtech.today(),
-    'services', (select coalesce(json_agg(json_build_object('id', s.id, 'category', s.category, 'name', s.name, 'price', s.price, 'duration_min', s.duration_min) order by s.category, s.name), '[]')
+    'services', (select coalesce(json_agg(json_build_object('id', s.id, 'category', s.category, 'name', s.name, 'price', s.price, 'duration_min', s.duration_min) order by s.category, s.sort_order nulls last, s.name), '[]')
                    from browtech.services s where s.active and s.online))
     from browtech.config c where c.id = 1;
 $$;
@@ -548,7 +549,7 @@ begin
   return json_build_object(
     'me', json_build_object('id', u.id, 'name', u.name, 'is_admin', u.is_admin),
     'users', (select coalesce(json_agg(json_build_object('id', id, 'name', name, 'is_admin', is_admin, 'active', active) order by id), '[]') from browtech.users),
-    'services', (select coalesce(json_agg(s order by s.category, s.name), '[]') from browtech.services s),
+    'services', (select coalesce(json_agg(s order by s.category, s.sort_order nulls last, s.name), '[]') from browtech.services s),
     'config', (select row_to_json(c) from browtech.config c where c.id = 1),
     'sales', (select coalesce(json_agg(x order by x.id), '[]') from browtech.sales x
                where x.id > coalesce(p_after_sale, 0) and (u.is_admin or (x.user_id = u.id and x.entry_date = browtech.today()))),
@@ -817,6 +818,18 @@ begin
   return json_build_object('ok', true, 'changed', true);
 end $$;
 
+-- Price list: the order services are shown in (ids in the wanted order).
+create or replace function public.reorder_services(p_token uuid, p_ids int[]) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare u browtech.users;
+begin
+  u := browtech.me(p_token); perform browtech.need_admin(u);
+  if p_ids is null or cardinality(p_ids) = 0 then raise exception 'Nothing to rearrange'; end if;
+  update browtech.services s set sort_order = o.pos from unnest(p_ids) with ordinality as o(id, pos) where s.id = o.id;
+  insert into browtech.events(user_id, action, details) values (u.id, 'price list', 'Services rearranged');
+  return json_build_object('ok', true);
+end $$;
+
 -- Online booking settings
 create or replace function public.save_settings(p_token uuid, p_online boolean, p_slot int, p_capacity int, p_days int, p_notice int, p_phone text, p_hours jsonb) returns json
 language plpgsql security definer set search_path = browtech, public as $$
@@ -847,7 +860,7 @@ begin
   for f in
     select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.proname in ('public_info','public_slots','public_request','list_users','login','logout','get_state','staff_slots',
-       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','save_settings')
+       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','reorder_services','save_settings')
   loop
     execute format('revoke all on function %s from public', f.sig);
     execute format('grant execute on function %s to anon, authenticated', f.sig);

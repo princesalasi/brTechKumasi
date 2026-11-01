@@ -90,6 +90,10 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 #wkExtra { margin: 12px 0 0; }
 #wkExtra:empty { display: none; }
 #wkDiscRow { margin: 12px 0; }
+.order-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+.order-row .ln { flex: 1; min-width: 0; }
+.order-row.dim .ln { color: var(--text3); }
+.order-btn { min-width: 44px; min-height: 40px; flex: none; }
 .mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--fill); border-radius: 12px; padding: 3px; margin: 12px 0 14px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
 .mode .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform 260ms cubic-bezier(.3,1.25,.5,1); }
 @media (prefers-color-scheme: dark) { .mode .thumb { background: #4a4652; } }
@@ -613,7 +617,7 @@ details.f[open] > summary { margin-bottom: 12px; }
       <div class="section-h"><span>People</span></div>
       <div class="card"><div id="userList"></div><button class="btn secondary small needs-net" id="addUserBtn" type="button" style="margin-top:10px">Add person</button></div>
       <div class="section-h"><span>Price list</span></div>
-      <div class="card"><p class="small muted" style="margin:0 0 4px">Prices fill in automatically when a service is entered and can still be changed for one customer. The time a service takes decides which times customers can book. Tap a service to change it.</p><div id="priceList"></div><button class="btn secondary small needs-net" id="addSvcBtn" type="button" style="margin-top:10px">Add service</button></div>
+      <div class="card"><p class="small muted" style="margin:0 0 4px">Prices fill in automatically when a service is entered and can still be changed for one customer. The time a service takes decides which times customers can book. Tap a service to change it.</p><div id="priceList"></div><button class="btn secondary small needs-net" id="addSvcBtn" type="button" style="margin-top:10px">Add service</button> <button class="btn secondary small needs-net" id="orderSvcBtn" type="button" style="margin-top:10px">Rearrange</button></div>
       <div class="section-h"><span>Activity log</span></div>
       <div class="card"><p class="small muted" style="margin:0 0 4px">People added, PINs changed, prices changed, lockouts. Cannot be edited.</p><div id="eventList"></div><button class="link" id="evMore" type="button" hidden>Show more</button></div>
     </div>
@@ -1596,15 +1600,21 @@ function allItems(D) {
   db.changes.forEach(c => { const a = db.appts.find(x => x.id === c.appointment_id) || {}; items.push({ type: "change", id: c.id, day: isoInTZ(c.logged_at), at: c.logged_at, cat: a.category, staff: c.action === "moved" ? c.new_staff_id : a.staff_id, user: c.user_id, pay: null, undone: D.undo.change[c.id], text: [a.customer, a.phone, c.note, a.service_name].join(" "), r: c }); });
   return items;
 }
+// A booking can hold services from several categories; it matches if any of them does.
+function itemHasCat(it, cat) {
+  if (it.cat === cat || it.type === "sale") return it.cat === cat;
+  const a = it.type === "appointment" ? it.r : db.appts.find(x => x.id === it.r.appointment_id);
+  return !!a && apptServices(a).some(x => x.category === cat);
+}
 function filtered(D) {
   const f = histFilter();
   return allItems(D).filter(it =>
-    (!f.type || (f.type === "undone" ? !!it.undone : f.type === "online" ? it.type === "appointment" && it.r.source === "online" : it.type === f.type)) && (!f.cat || it.cat === f.cat) &&
+    (!f.type || (f.type === "undone" ? !!it.undone : f.type === "online" ? it.type === "appointment" && it.r.source === "online" : it.type === f.type)) && (!f.cat || itemHasCat(it, f.cat)) &&
     (!f.staff || String(it.staff) === f.staff) && (!f.user || String(it.user) === f.user) && (!f.pay || it.pay === f.pay) &&
     (!f.from || it.day >= f.from) && (!f.to || it.day <= f.to) && (!f.text || it.text.toLowerCase().includes(f.text)))
     .sort((a, b) => b.day.localeCompare(a.day) || b.at.localeCompare(a.at));
 }
-function fillSelect(sel, opts) { const cur = sel.value; sel.innerHTML = ""; sel.append(h("option", { value: "" }, "All"), opts.map(([v, t]) => h("option", { value: v }, t))); sel.value = cur; }
+function fillSelect(sel, opts) { const cur = sel.value; sel.innerHTML = ""; sel.append(h("option", { value: "" }, "All"), ...opts.map(([v, t]) => h("option", { value: v }, t))); sel.value = cur; }
 function renderHistory(D) {
   fillSelect($("fCat"), CAT_KEYS.map(c => [c, CATS[c]]));
   fillSelect($("fStaff"), db.users.map(u => [String(u.id), u.name]));
@@ -1896,6 +1906,26 @@ function priceTable(editable) {
       h("div", { class: "amt", style: "font-weight:500" + (s.price > 0 ? "" : ";color:var(--text3)") }, s.price > 0 ? money(s.price) : "no price")))));
   });
   return box;
+}
+// Order within each category; customers and staff see the services in this order.
+function reorderSheet() {
+  const lists = CAT_KEYS.map(c => ({ c, svcs: db.services.filter(s => s.category === c) })).filter(l => l.svcs.length);
+  const box = h("div");
+  const move = (svcs, i, by) => { const [s] = svcs.splice(i, 1); svcs.splice(i + by, 0, s); draw(); };
+  const arrow = (d, label, off, onclick) => h("button", { class: "btn secondary small order-btn", type: "button", "aria-label": label, disabled: off, onclick }, d);
+  function draw() {
+    box.replaceChildren(...lists.flatMap(({ c, svcs }) => [
+      h("div", { class: "lbl", style: "margin-top:12px" }, h("span", { class: "key", style: "background:var(--c-" + c + ")" }), CATS[c]),
+      ...svcs.map((s, i) => h("div", { class: "order-row" + (s.active ? "" : " dim") }, h("span", { class: "ln" }, s.name),
+        arrow("↑", "Move " + s.name + " up", i === 0, () => move(svcs, i, -1)),
+        arrow("↓", "Move " + s.name + " down", i === svcs.length - 1, () => move(svcs, i, 1))))
+    ]));
+  }
+  draw();
+  sheet("Rearrange services", [h("p", { class: "small muted", style: "margin:-6px 4px 4px" }, "Customers and staff see the services in this order."), box], "Save", async () => {
+    await call("reorder_services", { p_ids: lists.flatMap(l => l.svcs.map(s => s.id)) });
+    await sync(); toast("Order saved");
+  }, { focus: false });
 }
 function serviceSheet(s) {
   const cat = h("select", { id: "pCat" }, CAT_KEYS.map(c => h("option", { value: c }, CATS[c])));
@@ -2439,6 +2469,7 @@ $("changePinBtn").onclick = changePinSheet;
 $("logoutBtn").onclick = async () => { if (!confirm("Log out?")) return; try { await rpc("logout", { p_token: session.token }); } catch (e) {} endSession(); };
 $("addUserBtn").onclick = addUserSheet;
 $("addSvcBtn").onclick = () => serviceSheet(null);
+$("orderSvcBtn").onclick = reorderSheet;
 $("cfgBtn").onclick = () => db.config && settingsSheet();
 $("shareLink").onclick = shareBookLink;
 $("reloadAll").onclick = async () => { await sync(true); toast("All data reloaded"); };
