@@ -21,7 +21,7 @@ Discounts: optional GH₵ amount off the whole payment, on the walk-in page and 
 Rules: every entry is permanent (triggers block update/delete). Mistakes → Undo with a required reason (row in `browtech.undos`); undone entries are shown in red. Appointment status is derived (`browtech.appt_now`): requested / booked / done / declined / cancelled / no-show / undone.
 
 ## Files
-- `index.html` – the whole app (CSS + JS inline). Design: lilac & pink, light/dark, Apple-style (sheets with drag-to-close, translucent tab bar, reduced-motion support).
+- `index.html` – the whole app (CSS + JS inline). Design: Bubblegum Pink (#f05da3) with the logo's rose gold, light/dark, Apple-style (sheets with drag-to-close, translucent tab bar, reduced-motion support).
 - `setup.sql` – full database setup. **Safe to run again** (keeps data); run the newest version in Supabase SQL Editor after any DB change. Last line creates the first admin only once.
 - `config.js` – Supabase URL + publishable key (public by design; never put a secret/service_role key here).
 - `sw.js` – offline shell. **Bump `VERSION` whenever index.html changes.**
