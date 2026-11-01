@@ -7,6 +7,8 @@ Built to match the owner's earlier app `princesalasi/sakal_stocks` (same structu
 One static page (`index.html`, no build step, no libraries) on GitHub Pages: https://princesalasi.github.io/brTechKumasi/
 Data in Supabase (free plan), project `bgfuyharbxpzdtdgaakv` (URL + publishable key in `config.js`). The website only calls SQL functions (RPC); tables live in a private schema `browtech`.
 
+Booking page gallery: a strip of style ideas for the chosen category (`GALLERY` in `index.html`), free stock photos loaded from Pexels and labelled as not the shop's own work. Swap in the shop's own photos when available.
+
 A swipeable Client / Staff switch moves between the parts: top of the booking page, the login page and the More tab. Staff still needs a PIN unless already logged in on that device.
 
 Three parts:

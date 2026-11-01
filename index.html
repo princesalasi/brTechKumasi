@@ -118,6 +118,14 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 @media (prefers-color-scheme: dark) { .op.alt { background: var(--card2); } }
 .op:disabled { opacity: .4; cursor: default; }
 
+/* ---------- customer gallery ---------- */
+.gallery { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 4px; scroll-snap-type: x proximity; scroll-padding-inline: 16px; }
+.gallery::-webkit-scrollbar { display: none; }
+.gallery button { flex: none; width: 112px; height: 140px; padding: 0; border: 0; border-radius: 14px; overflow: hidden; background: var(--fill); scroll-snap-align: start; cursor: pointer; }
+.gallery img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-note { margin: 4px 4px 12px; font-size: 12px; color: var(--text3); letter-spacing: 0; }
+.gallery-big { width: 100%; max-height: 62vh; object-fit: contain; display: block; border-radius: 14px; background: var(--fill); margin-bottom: 10px; }
+
 /* ---------- day strip ---------- */
 .days { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 10px; padding: 2px 16px 4px; scroll-snap-type: x proximity; scroll-padding-inline: 16px; }
 .days::-webkit-scrollbar { display: none; }
@@ -423,6 +431,7 @@ details.f[open] > summary { margin-bottom: 12px; }
     <section class="step" id="bkStep1">
       <h2 class="step-h"><span class="n">1</span>Choose your services</h2>
       <div class="pills" id="bkCats" role="group" aria-label="Category"></div>
+      <div id="bkGallery"></div>
       <div class="group" id="bkServices" role="group" aria-label="Services – you can choose several"></div>
       <div id="bkChosen" class="chosen" hidden></div>
     </section>
@@ -2244,6 +2253,27 @@ function waNumber(phone) {
 }
 const WA_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2a9.8 9.8 0 0 0-8.4 14.8L2.2 21.8l4.9-1.3A9.8 9.8 0 1 0 12 2.2zm0 17.8a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.6.3 2.7 2.7 0 0 0-.9 2c0 1.2.9 2.4 1 2.5.1.2 1.7 2.6 4.2 3.7 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.5-.4z"/></svg>';
 const waLink = (phone, text) => "https://wa.me/" + waNumber(phone) + (text ? "?text=" + encodeURIComponent(text) : "");
+// Style ideas per category: free stock photos loaded from Pexels (pexels.com/license), not the shop's own work, and the page says so.
+const GALLERY = {
+  brows: [[7446904, "Eyebrows being shaped with a brush"], [5178051, "Brow artist working on a client"], [9882223, "Eyebrows being done, black and white"], [6762717, "Side profile with defined eyebrows"]],
+  lashes: [[8579880, "Closed eye with long lashes"], [10698006, "Woman with full eyelashes"], [21412169, "Close-up of lash extensions"], [5128220, "Lash artist applying extensions"]],
+  nails: [[18730147, "Black and gold nail art"], [5871831, "Hands with long painted nails"], [36207029, "Nails with gold leaf design"], [35031996, "Elegant nude nail design"]],
+  tattoo: [[16198289, "Woman with arm tattoos"], [12685342, "Woman with shoulder and arm tattoos"], [10066410, "Close-up of a hand tattoo"], [4655712, "Tattoo artist at work"]],
+  piercing: [[33614370, "Ear piercings with braids"], [6910806, "Nose ring and hoop earrings"], [7479953, "Close-up of a nose piercing"], [8410922, "Hoop earrings and piercings"]],
+  pony: [[9710238, "Side view of a long braided ponytail"], [5062726, "Sleek low ponytail"], [17403346, "Braided updo in profile"], [6953589, "Wavy ponytail"]],
+};
+const pexelsImg = (id, w) => "https://images.pexels.com/photos/" + id + "/pexels-photo-" + id + ".jpeg?auto=compress&cs=tinysrgb&w=" + w;
+let galleryCat = null;
+function renderGallery() {
+  if (galleryCat === bk.cat) return; // the strip keeps its scroll position while services are ticked
+  galleryCat = bk.cat;
+  const photos = GALLERY[bk.cat] || [];
+  $("bkGallery").replaceChildren(...(photos.length ? [
+    h("div", { class: "gallery", role: "group", "aria-label": CATS[bk.cat] + " style ideas" }, photos.map(([id, alt]) => h("button", { type: "button", "aria-label": "Show larger: " + alt, onclick: () => sheet(CATS[galleryCat] + " idea", [h("img", { class: "gallery-big", src: pexelsImg(id, 900), alt }), h("p", { class: "gallery-note" }, alt + ". Stock photo from Pexels.")]) },
+      h("img", { src: pexelsImg(id, 300), alt: "", loading: "lazy", width: 112, height: 140 })))),
+    h("p", { class: "gallery-note" }, "Style ideas, not our own work. Photos from Pexels.")
+  ] : []));
+}
 async function showBook() {
   $("login").hidden = true; $("app").hidden = true; $("book").hidden = false; $("bookbar").hidden = false;
   document.title = "BrowTech Kumasi – Book an appointment";
@@ -2283,6 +2313,7 @@ function renderBook() {
   const cats = CAT_KEYS.filter(c => info.services.some(x => x.category === c));
   $("bkCats").replaceChildren(...cats.map(c => h("button", { class: "pill press", type: "button", "aria-pressed": String(c === bk.cat), onclick: () => { bk.cat = c; renderBook(); } },
     h("i", { style: "background:var(--c-" + c + ")" }), CATS[c])));
+  renderGallery();
   const isOn = x => bk.svcs.some(y => y.id === x.id);
   $("bkServices").replaceChildren(...info.services.filter(x => x.category === bk.cat).map(x => h("button", { class: "svc", type: "button", role: "checkbox", "aria-checked": String(isOn(x)),
       onclick: () => {
