@@ -1057,7 +1057,7 @@ function saleFormSheet(opts) {
   const box = h("div", { class: "lines" });
   const totalEl = h("div", { class: "total" });
   let pay = "cash";
-  const paySeg = seg({ cash: "Cash", momo: "MoMo", card: "Card / bank" }, pay, v => { pay = v; });
+  const paySeg = seg(opts.walkin ? { cash: "Cash", momo: "MoMo" } : { cash: "Cash", momo: "MoMo", card: "Card / bank" }, pay, v => { pay = v; });
   const payBlk = h("div", { class: "blk" }, h("span", { class: "lbl" }, "Paid with"), paySeg);
   const addWrap = h("div", { class: "field" });
   function addLine(svc) {
@@ -1119,7 +1119,7 @@ function saleFormSheet(opts) {
       h("div", { class: "rowf" }, h("label", { for: "sCust" }, "Customer"), cust),
       h("div", { class: "rowf" }, h("label", { for: "sPhone" }, "Phone"), phone),
       h("div", { class: "rowf" }, h("label", { for: "sNote" }, "Note"), note))
-  ], "Save", async () => {
+  ], opts.walkin ? "Paid" : "Save", async () => {
     if (!lines.length) { nudge(addWrap.querySelector("select")); throw new Error("Choose a service"); }
     let tot = 0;
     const items = lines.map(l => {
@@ -1225,7 +1225,7 @@ function renderWalkin(D) {
 function walkinNext() {
   const services = wk.ids.map(svcFromList);
   if (wk.other) services.push({ id: null, category: "", name: "", price: 0, duration_min: 60 });
-  saleFormSheet({ services, onSaved: () => { wk.ids = []; wk.other = false; render(); } });
+  saleFormSheet({ walkin: true, services, onSaved: () => { wk.ids = []; wk.other = false; render(); } });
 }
 
 /* ---------- booking sheet (several services) ---------- */
