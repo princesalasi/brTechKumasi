@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BrowTech Kumasi</title>
+<meta name="theme-color" content="#f5f2f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="BrowTech">
+<style>
+/* ---------- colours: lilac & pink, separate light and dark sets ---------- */
+:root {
+  color-scheme: light;
+  --bg: #f5f2f9; --card: #ffffff; --card2: #f3eff8; --text: #000000; --text2: #6c6875; --text3: #8e8a96;
+  --sep: rgba(60,50,80,.16); --fill: rgba(120,100,150,.11); --fill2: rgba(120,100,150,.2);
+  --tint: #7b45c9; --tint-ink: #ffffff; --pink: #c93a83; --pink-ink: #ffffff;
+  --red: #d70015; --green: #1a7f37; --orange-bg: #fff1d6; --orange-ink: #8a4b00; --grid: rgba(60,50,80,.1); --muted: #8e8a96;
+  --c-pony: #b07d12; --c-piercing: #138a7c; --c-brows: #7b45c9; --c-tattoo: #3c4a9e; --c-lashes: #d13d88; --c-nails: #d4652f; --c-other: #8e8a96;
+  --money: #7b45c9;
+  --income-card: linear-gradient(155deg, #ec74b1 0%, #c43c83 100%);
+  --appt-card: linear-gradient(155deg, #a982ea 0%, #7647c8 100%);
+  --bar: rgba(250,248,252,.78); --scrim: rgba(20,10,30,.32);
+  --shadow: 0 1px 2px rgba(40,20,60,.05), 0 4px 14px rgba(40,20,60,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #000000; --card: #1c1b1f; --card2: #2b2930; --text: #ffffff; --text2: #a29ead; --text3: #8d8996;
+    --sep: rgba(90,84,100,.6); --fill: rgba(130,118,150,.22); --fill2: rgba(130,118,150,.34);
+    --tint: #c09bff; --tint-ink: #1e0d38; --pink: #ff7cb9; --pink-ink: #3b0a22;
+    --red: #ff6961; --green: #32d74b; --orange-bg: #3d2a0a; --orange-ink: #ffcf7a; --grid: rgba(90,84,100,.45); --muted: #8d8996;
+    --c-pony: #e0aa3e; --c-piercing: #3cc4b2; --c-brows: #b28cff; --c-tattoo: #8b98f0; --c-lashes: #ff73b4; --c-nails: #ff9a62; --c-other: #8d8996;
+    --money: #c09bff;
+    --income-card: linear-gradient(155deg, #c9558f 0%, #93306a 100%);
+    --appt-card: linear-gradient(155deg, #8761cc 0%, #5b35a0 100%);
+    --bar: rgba(22,21,24,.78); --scrim: rgba(0,0,0,.5);
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.35 -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif; letter-spacing: -0.01em; }
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+a { color: var(--tint); }
+[hidden] { display: none !important; }
+main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 96px); }
+
+/* ---------- type ---------- */
+.large { font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: -0.025em; margin: 18px 4px 2px; }
+.dateline { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--text2); margin: 14px 4px 0; }
+.status { font-size: 13px; color: var(--text2); margin: 2px 4px 16px; display: flex; align-items: center; gap: 6px; letter-spacing: 0; flex-wrap: wrap; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; }
+.dot.off { background: var(--red); }
+.section-h { font-size: 13px; text-transform: uppercase; letter-spacing: .02em; color: var(--text2); margin: 26px 16px 7px; font-weight: 400; display: flex; justify-content: space-between; align-items: baseline; }
+.section-h button { border: 0; background: none; color: var(--tint); font-size: 15px; text-transform: none; letter-spacing: 0; cursor: pointer; padding: 0; }
+.muted { color: var(--text2); } .small { font-size: 13px; letter-spacing: 0; }
+.pos { color: var(--green); } .neg { color: var(--red); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- press feedback (on pointer-down, instant) ---------- */
+.press { transition: transform 160ms cubic-bezier(.2,.8,.2,1), opacity 160ms; }
+.press:active { transform: scale(.97); }
+
+/* ---------- summary cards ---------- */
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.scard { position: relative; border: 0; border-radius: 26px; padding: 16px 16px 16px; min-height: 132px; text-align: left; color: #fff; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 8px 24px -12px rgba(60,20,90,.55); }
+.scard.income { background: var(--income-card); } .scard.appts { background: var(--appt-card); }
+.scard:focus-visible { outline: 3px solid var(--tint); outline-offset: 3px; }
+.slabel { font-size: 15px; font-weight: 600; opacity: .9; letter-spacing: -0.005em; }
+.sbig { white-space: nowrap; font-size: 34px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; font-variant-numeric: tabular-nums; margin-top: 12px; }
+.sbig small { font-size: 17px; font-weight: 600; opacity: .85; margin-right: 3px; letter-spacing: -0.01em; }
+.ssub { font-size: 13px; opacity: .88; margin-top: 4px; letter-spacing: 0; }
+.chev { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; opacity: .75; }
+
+/* ---------- big actions ---------- */
+.ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.op { border: 0; border-radius: 16px; padding: 15px 8px; font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.op svg { width: 20px; height: 20px; flex: none; }
+.op.main { background: var(--tint); color: var(--tint-ink); }
+.op.alt { background: var(--card); color: var(--tint); box-shadow: var(--shadow); }
+@media (prefers-color-scheme: dark) { .op.alt { background: var(--card2); } }
+.op:disabled { opacity: .4; cursor: default; }
+
+/* ---------- day strip ---------- */
+.days { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 10px; padding: 2px 16px 4px; scroll-snap-type: x proximity; scroll-padding-inline: 16px; }
+.days::-webkit-scrollbar { display: none; }
+.daychip { flex: none; scroll-snap-align: start; border: 0; background: var(--card); box-shadow: var(--shadow); border-radius: 14px; min-width: 56px; padding: 7px 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 1px; cursor: pointer; }
+@media (prefers-color-scheme: dark) { .daychip { background: var(--card2); } }
+.daychip .dw { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text2); letter-spacing: .02em; }
+.daychip .dn { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.daychip .dc { font-size: 11px; color: var(--text2); min-height: 14px; letter-spacing: 0; }
+.daychip[aria-pressed="true"] { background: var(--tint); }
+.daychip[aria-pressed="true"] .dw, .daychip[aria-pressed="true"] .dn, .daychip[aria-pressed="true"] .dc { color: var(--tint-ink); }
+.daychip.pick { justify-content: center; color: var(--tint); font-size: 13px; font-weight: 600; position: relative; }
+.daychip.pick input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+
+/* ---------- grouped lists ---------- */
+.group { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.card { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.card h2 { font-size: 17px; margin: 0 0 8px; font-weight: 600; }
+.entry { display: flex; gap: 12px; align-items: flex-start; padding: 11px 16px; position: relative; }
+.entry + .entry::before { content: ""; position: absolute; top: 0; left: 60px; right: 0; border-top: .5px solid var(--sep); }
+.entry.tap { cursor: pointer; }
+.entry.person { flex-wrap: wrap; row-gap: 8px; }
+.entry.person .main { flex: 1 1 100%; }
+.entry.person .row { gap: 8px; }
+.entry.person .row > .btn { flex: none; }
+.entry.tap:active { background: var(--fill); }
+.card .entry, .sheet .entry { padding-left: 0; padding-right: 0; }
+.card .entry + .entry::before, .sheet .entry + .entry::before { left: 44px; }
+.card .entry.noico + .entry::before, .card .entry + .entry.noico::before { left: 0; }
+.ico { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px; margin-top: 1px; letter-spacing: 0; }
+.ico svg { width: 17px; height: 17px; }
+.ico.c-pony { background: var(--c-pony); } .ico.c-piercing { background: var(--c-piercing); } .ico.c-brows { background: var(--c-brows); }
+.ico.c-tattoo { background: var(--c-tattoo); } .ico.c-lashes { background: var(--c-lashes); } .ico.c-nails { background: var(--c-nails); }
+.ico.c-other { background: var(--c-other); }
+.time { flex: none; width: 48px; font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; padding-top: 1px; }
+.entry .main { flex: 1; min-width: 0; }
+.entry .ttl { font-weight: 600; font-size: 16px; overflow-wrap: anywhere; }
+.entry .sub { font-size: 14px; color: var(--text2); margin-top: 1px; overflow-wrap: anywhere; letter-spacing: 0; }
+.entry .sub.why { color: var(--red); }
+.entry .amt { font-weight: 600; font-size: 17px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.entry .side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.entry.struck { background: rgba(215,0,21,.07); }
+@media (prefers-color-scheme: dark) { .entry.struck { background: rgba(255,105,97,.12); } }
+.entry.struck .ttl, .entry.struck .amt, .entry.struck .time { text-decoration: line-through; color: var(--red); }
+.entry.struck .ico { background: var(--red); }
+.entry.dim .ttl, .entry.dim .time { color: var(--text2); }
+.tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 9px; background: var(--fill); color: var(--text2); margin-left: 6px; font-weight: 600; vertical-align: 2px; letter-spacing: 0; text-decoration: none; }
+.tag.undone { background: var(--red); color: #fff; }
+.tag.done { background: rgba(26,127,55,.14); color: var(--green); }
+.tag.warn { background: var(--orange-bg); color: var(--orange-ink); }
+.tag.tint { background: var(--fill); color: var(--tint); }
+.day { font-size: 13px; text-transform: uppercase; color: var(--text2); margin: 22px 16px 7px; letter-spacing: .02em; display: flex; justify-content: space-between; }
+.empty { text-align: center; color: var(--text2); padding: 22px 12px; font-size: 15px; }
+
+/* ---------- buttons, fields ---------- */
+.btn { border: 0; border-radius: 12px; padding: 13px 16px; font-size: 17px; font-weight: 600; background: var(--tint); color: var(--tint-ink); cursor: pointer; text-decoration: none; text-align: center; display: inline-block; }
+.btn.secondary { background: var(--fill); color: var(--tint); }
+.btn.danger { background: var(--fill); color: var(--red); }
+.btn.solid-danger { background: var(--red); color: #fff; }
+.btn.small { padding: 7px 12px; font-size: 15px; border-radius: 10px; }
+.btn:disabled { opacity: .4; cursor: default; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > .btn { flex: 1; }
+.field { margin-bottom: 14px; }
+.field label, .lbl { display: block; font-size: 13px; color: var(--text2); margin: 0 4px 6px; letter-spacing: 0; }
+.field input, .field select, .field textarea { width: 100%; min-width: 0; border: 0; border-radius: 12px; background: var(--fill); padding: 12px 14px; font-size: 17px; outline: none; }
+.field input:focus, .field select:focus { box-shadow: 0 0 0 2px var(--tint) inset; }
+.blk { margin-bottom: 16px; }
+.money { width: 100%; border: 0; background: var(--fill); border-radius: 16px; text-align: center; font-size: 40px; font-weight: 700; letter-spacing: -0.03em; padding: 10px 8px; font-variant-numeric: tabular-nums; outline: none; caret-color: var(--tint); }
+.money:focus { box-shadow: 0 0 0 2px var(--tint) inset; }
+.moneywrap { position: relative; }
+.moneywrap .cur { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 17px; font-weight: 600; color: var(--text2); pointer-events: none; }
+.rows { border-radius: 14px; background: var(--card); overflow: hidden; margin-bottom: 14px; }
+@media (prefers-color-scheme: dark) { .sheet .rows { background: var(--card2); } }
+.card .rows { background: var(--fill); }
+.rowf { display: flex; align-items: center; gap: 12px; padding: 0 14px; min-height: 48px; position: relative; }
+.rowf + .rowf::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; border-top: .5px solid var(--sep); }
+.rowf label { flex: none; font-size: 17px; }
+.rowf input, .rowf select { flex: 1; min-width: 0; border: 0; background: transparent; text-align: right; font-size: 17px; color: var(--text2); padding: 12px 0; outline: none; }
+.rowf select { text-align-last: right; -webkit-appearance: none; appearance: none; }
+.rowf input:focus, .rowf select:focus { color: var(--text); }
+.rowf input[type=date], .rowf input[type=time] { -webkit-appearance: none; appearance: none; display: flex; justify-content: flex-end; flex: 0 1 auto; margin-left: auto; max-width: 72%; }
+.rowf input::-webkit-date-and-time-value { text-align: right; }
+.daterows { margin: 0 0 14px; }
+.full { grid-column: 1 / -1; }
+input[type=date] { min-width: 0; max-width: 100%; }
+.link { display: block; width: 100%; border: 0; background: none; color: var(--tint); font-size: 17px; padding: 14px; text-align: center; cursor: pointer; }
+.grid2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0 10px; }
+.hint { font-size: 13px; color: var(--text2); margin: 6px 4px 0; letter-spacing: 0; }
+.err { color: var(--red); font-size: 15px; margin: 4px 4px 10px; }
+.seg { display: flex; background: var(--fill); border-radius: 10px; padding: 2px; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 8px 4px; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 200ms, box-shadow 200ms; }
+.seg button[aria-pressed="true"] { background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); font-weight: 600; }
+@media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { background: #4a4652; } }
+.banner { background: var(--orange-bg); color: var(--orange-ink); border-radius: 14px; padding: 11px 14px; font-size: 15px; margin: 0 0 14px; letter-spacing: 0; }
+
+/* ---------- tables ---------- */
+table.t { width: 100%; border-collapse: collapse; font-size: 15px; letter-spacing: 0; }
+table.t th { text-align: left; font-weight: 500; color: var(--text2); font-size: 13px; padding: 4px 4px 6px; border-bottom: .5px solid var(--sep); }
+table.t td { padding: 9px 4px; border-bottom: .5px solid var(--sep); font-variant-numeric: tabular-nums; }
+table.t tr:last-child td { border-bottom: 0; }
+table.t .n { text-align: right; white-space: nowrap; }
+table.t tr.total td { font-weight: 600; }
+.key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 7px; vertical-align: 0; }
+.meter { height: 5px; border-radius: 3px; background: var(--fill); margin-top: 5px; overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 3px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.tile { background: var(--card); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow); }
+.tile .tl { font-size: 13px; color: var(--text2); letter-spacing: 0; }
+.tile .tv { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+
+/* ---------- tab bar (translucent material) ---------- */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; background: var(--bar); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); border-top: .5px solid var(--sep); padding-bottom: env(safe-area-inset-bottom); }
+.tabbar .in { display: flex; width: 100%; max-width: 640px; }
+.tabbar button { flex: 1; border: 0; background: none; padding: 7px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10.5px; font-weight: 500; color: var(--text3); cursor: pointer; letter-spacing: .01em; }
+.tabbar svg { width: 25px; height: 25px; }
+.tabbar button[aria-selected="true"] { color: var(--tint); }
+
+/* ---------- sheets ---------- */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 40; opacity: 0; transition: opacity 320ms ease; }
+.scrim.on { opacity: 1; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; margin: 0 auto; max-width: 640px; max-height: 92vh; overflow: auto; overscroll-behavior: contain; background: var(--bg); border-radius: 18px 18px 0 0; padding: 0 16px calc(18px + env(safe-area-inset-bottom)); transform: translateY(105%); transition: transform 460ms cubic-bezier(.32,.72,0,1); }
+@media (prefers-color-scheme: dark) { .sheet { background: var(--card); } }
+.sheet.on { transform: translateY(0); }
+.grab { position: sticky; top: 0; z-index: 2; padding: 8px 0 4px; margin: 0 -16px; background: inherit; cursor: grab; touch-action: none; }
+.grab::before { content: ""; display: block; width: 38px; height: 5px; border-radius: 3px; background: var(--fill2); margin: 0 auto; }
+.sheet h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 8px 4px 14px; }
+.sheet .foot { display: flex; gap: 10px; margin-top: 6px; }
+.sheet .foot .btn { flex: 1; }
+.sheet .card { background: var(--card); }
+@media (prefers-color-scheme: dark) { .sheet .card { background: var(--card2); } }
+.choice { display: block; width: 100%; border: 0; background: var(--card); text-align: left; padding: 15px 16px; font-size: 17px; cursor: pointer; position: relative; color: var(--tint); text-decoration: none; }
+.choice.plain { color: var(--text); }
+.choice.red { color: var(--red); }
+@media (prefers-color-scheme: dark) { .choice { background: var(--card2); } }
+.choice + .choice::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
+.choice:active { background: var(--fill2); }
+.choice:disabled { opacity: .4; }
+.choices { border-radius: 14px; overflow: hidden; margin-bottom: 14px; }
+
+/* ---------- login ---------- */
+#login main { padding-top: calc(env(safe-area-inset-top) + 40px); }
+.logo { width: 72px; height: 72px; border-radius: 18px; display: block; margin: 0 auto 12px; box-shadow: 0 8px 24px -10px rgba(110,50,160,.6); }
+.login-title { text-align: center; font-size: 30px; font-weight: 700; letter-spacing: -0.025em; margin: 0; }
+.login-sub { text-align: center; color: var(--text2); margin: 4px 0 26px; font-size: 15px; letter-spacing: 0; }
+.userlist .choice { display: flex; justify-content: space-between; align-items: center; font-weight: 500; color: var(--text); }
+.userlist .choice::after { content: "›"; color: var(--text3); font-size: 24px; line-height: 1; }
+.pindots { display: flex; justify-content: center; gap: 16px; margin: 22px 0 8px; }
+.pindots i { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--text2); transition: background 120ms, transform 120ms; }
+.pindots i.on { background: var(--tint); border-color: var(--tint); transform: scale(1.05); }
+.pindots.shake { animation: shake 360ms cubic-bezier(.36,.07,.19,.97); }
+@keyframes shake { 20%,60% { transform: translateX(-9px); } 40%,80% { transform: translateX(9px); } }
+.keypad { display: grid; grid-template-columns: repeat(3, 78px); gap: 16px 26px; justify-content: center; margin-top: 22px; }
+.keypad button { width: 78px; height: 78px; border-radius: 50%; border: 0; background: var(--fill); font-size: 32px; font-weight: 400; cursor: pointer; transition: background 80ms; }
+.keypad button:active { background: var(--fill2); }
+.keypad button.plain { background: transparent; font-size: 17px; }
+
+/* ---------- toast ---------- */
+#toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 76px); transform: translate(-50%, 16px); background: rgba(40,36,46,.94); color: #fff; padding: 11px 16px; border-radius: 14px; font-size: 15px; opacity: 0; transition: opacity 220ms, transform 320ms cubic-bezier(.32,.72,0,1); pointer-events: none; z-index: 60; max-width: calc(100vw - 32px); display: flex; gap: 14px; align-items: center; letter-spacing: 0; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast.act { pointer-events: auto; }
+#toast button { border: 0; background: none; color: #e3b8ff; font-weight: 600; font-size: 15px; padding: 2px 0; cursor: pointer; }
+
+/* ---------- charts ---------- */
+.chart-wrap { position: relative; }
+.chart-wrap svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.chart-wrap .axis text { fill: var(--text2); font-size: 11px; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--text2); margin-bottom: 6px; flex-wrap: wrap; letter-spacing: 0; }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+.legend.lines i { height: 3px; width: 14px; vertical-align: 3px; }
+.tip { position: absolute; pointer-events: none; background: var(--card); border: .5px solid var(--sep); border-radius: 10px; padding: 7px 9px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.18); white-space: nowrap; z-index: 5; letter-spacing: 0; }
+.tip .h { color: var(--text2); margin-bottom: 3px; }
+.tip .r { display: flex; align-items: center; gap: 6px; }
+.tip .r i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.filters { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0 10px; }
+details.f > summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+details.f > summary::-webkit-details-marker { display: none; }
+details.f > summary::after { content: "›"; color: var(--text3); font-size: 22px; transform: rotate(90deg); transition: transform 200ms; }
+details.f[open] > summary::after { transform: rotate(-90deg); }
+details.f[open] > summary { margin-bottom: 12px; }
+
+/* ---------- accessibility ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .sheet { transition: opacity 200ms ease; transform: none; opacity: 0; }
+  .sheet.on { opacity: 1; }
+  .press:active, .op:active { transform: none; }
+  .pindots.shake { animation: none; }
+  #toast { transition: opacity 200ms; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tabbar { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  #toast { background: #28242e; }
+}
+@media (prefers-contrast: more) {
+  .group, .card, .tile, .daychip { border: 1px solid var(--text2); }
+}
+</style>
+</head>
+<body>
+
+<div id="setup" hidden><main><div class="card" style="margin-top:40px"><h2>Almost ready</h2><p>This app is not connected to its database yet. Fill in <b>config.js</b> with the Supabase Project URL and key (see README).</p></div></main></div>
+
+<!-- ============ LOGIN ============ -->
+<div id="login" hidden><main>
+  <img class="logo" src="icon-192.png" alt="">
+  <h1 class="login-title">BrowTech Kumasi</h1>
+  <p class="login-sub" id="loginSub">Who's using the app?</p>
+  <div id="loginUsers">
+    <div class="choices userlist" id="userBtns"></div>
+    <p class="err" id="usersErr" hidden></p>
+  </div>
+  <div id="loginPin" hidden>
+    <div class="pindots" id="pinDots" aria-hidden="true"></div>
+    <p class="err" id="pinErr" hidden style="text-align:center"></p>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" aria-label="PIN" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+    <div class="keypad" id="keypad"></div>
+    <div class="row" style="max-width:300px;margin:22px auto 0">
+      <button class="btn secondary" id="pinBack" type="button">Back</button>
+      <button class="btn" id="pinGo" type="button" disabled>Log in</button>
+    </div>
+  </div>
+</main></div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+<main>
+  <!-- TODAY -->
+  <section class="tab" id="tab-today">
+    <div class="dateline" id="todayDate"></div>
+    <h1 class="large">Today</h1>
+    <div class="status"><span class="dot" id="syncDot"></span><span id="whoName"></span><span id="syncAgo"></span></div>
+    <div class="banner" id="offlineBanner" hidden></div>
+    <div class="cards">
+      <button class="scard income press" id="cardIncome" type="button">
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+        <span class="slabel">Income today</span>
+        <span><span class="sbig" id="incToday"><small>GH₵</small>0</span><span class="ssub" id="incSub" style="display:block"></span></span>
+      </button>
+      <button class="scard appts press" id="cardAppts" type="button">
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        <span class="slabel">Appointments</span>
+        <span><span class="sbig" id="apptToday">0</span><span class="ssub" id="apptSub" style="display:block"></span></span>
+      </button>
+    </div>
+    <div class="ops">
+      <button class="op main press needs-net" id="btnSale" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>Service done</button>
+      <button class="op alt press needs-net" id="btnBook" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>Book</button>
+    </div>
+
+    <div class="section-h" id="apptHead"><span id="apptTitle">Appointments</span></div>
+    <div class="days" id="dayStrip"></div>
+    <div class="group" id="apptList"></div>
+
+    <div class="section-h"><span>Recent services</span><button type="button" id="seeAll">See all</button></div>
+    <div class="group" id="recent"></div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="tab" id="tab-history" hidden>
+    <h1 class="large">History</h1>
+    <div class="status">Every entry is permanent. Mistakes are fixed with Undo and shown in red.</div>
+    <details class="card f" id="filterBox">
+      <summary><span>Filter</span><span class="muted small" id="filterSummary" style="margin-left:auto;margin-right:10px;font-weight:400">All entries</span></summary>
+      <div class="field"><label for="fText">Search</label><input id="fText" type="search" autocomplete="off" placeholder="Customer, phone or note"></div>
+      <div class="filters">
+        <div class="field"><label for="fType">Type</label><select id="fType"><option value="">All</option><option value="sale">Services done</option><option value="appointment">Bookings</option><option value="change">Booking changes</option><option value="undone">Undone only</option></select></div>
+        <div class="field"><label for="fCat">Category</label><select id="fCat"></select></div>
+        <div class="field"><label for="fStaff">Staff (did it)</label><select id="fStaff"></select></div>
+        <div class="field"><label for="fUser">Entered by</label><select id="fUser"></select></div>
+        <div class="field"><label for="fPay">Payment</label><select id="fPay"><option value="">All</option><option value="cash">Cash</option><option value="momo">MoMo</option><option value="card">Card / bank</option><option value="free">Free</option></select></div>
+      </div>
+      <div class="rows daterows">
+        <div class="rowf"><label for="fFrom">From</label><input id="fFrom" type="date"></div>
+        <div class="rowf"><label for="fTo">To</label><input id="fTo" type="date"></div>
+      </div>
+      <button class="btn secondary small" id="fClear" type="button">Clear filter</button>
+    </details>
+    <div class="card" id="histSum"></div>
+    <div id="histList"></div>
+    <button class="link" id="histMore" type="button" hidden>Show more</button>
+    <div class="section-h">Export</div>
+    <div class="card">
+      <p class="small muted" style="margin:0 0 12px">Downloads the entries shown above (with your filter) as a CSV file for Excel or Google Sheets. English format: comma-separated, dates as YYYY-MM-DD, amounts with a decimal point.</p>
+      <button class="btn secondary" id="exportBtn" type="button" style="width:100%">Download CSV</button>
+    </div>
+  </section>
+
+  <!-- TRENDS -->
+  <section class="tab" id="tab-trends" hidden>
+    <h1 class="large">Trends</h1>
+    <div class="status">Services and income use the day the service was done. Undone entries are left out.</div>
+    <div class="card filters" style="padding-bottom:0">
+      <div class="field"><label for="tPeriod">Period</label>
+        <select id="tPeriod"><option value="7">Last 7 days</option><option value="28" selected>Last 4 weeks</option><option value="84">Last 12 weeks</option><option value="365">Last 12 months</option><option value="month">This month</option><option value="year">This year</option><option value="all">All time</option><option value="custom">Custom dates</option></select></div>
+      <div class="field"><label for="tStep">Show per</label>
+        <select id="tStep"><option value="day">Day</option><option value="week" selected>Week</option><option value="month">Month</option></select></div>
+      <div class="rows daterows full" id="tCustom" hidden>
+        <div class="rowf"><label for="tFrom">From</label><input id="tFrom" type="date"></div>
+        <div class="rowf"><label for="tTo">To</label><input id="tTo" type="date"></div>
+      </div>
+      <p class="hint full" id="tMsg" hidden style="margin-bottom:12px"></p>
+      <button class="btn secondary full" id="pdfBtn" type="button" style="margin-bottom:14px">Download PDF</button>
+    </div>
+    <div id="trendsEmpty" class="card empty" hidden>No services or appointments in this period yet.</div>
+    <div id="trendsBody">
+      <div class="tiles" id="tTiles"></div>
+      <div class="card"><h2>Income</h2><div class="chart-wrap" id="chIncome"></div></div>
+      <div class="card"><h2>Services done</h2><div class="chart-wrap" id="chCount"></div></div>
+      <div class="card"><h2>By category</h2><div id="tCats"></div></div>
+      <div class="card"><h2>By staff</h2><div id="tStaff"></div></div>
+      <div class="card"><h2>Payment</h2><div id="tPay"></div></div>
+      <div class="card"><h2>Top services</h2><div id="tTop"></div></div>
+      <div class="card"><h2>Appointments</h2><p class="small muted" style="margin:-4px 0 8px">By appointment date in this period.</p><div id="tAppts"></div></div>
+    </div>
+  </section>
+
+  <!-- MORE -->
+  <section class="tab" id="tab-more" hidden>
+    <h1 class="large">More</h1>
+    <div class="status" id="meLine"></div>
+    <div class="card">
+      <div class="row"><button class="btn secondary" id="changePinBtn" type="button">Change my PIN</button><button class="btn danger" id="logoutBtn" type="button">Log out</button></div>
+    </div>
+    <div id="adminArea" hidden>
+      <div class="section-h"><span>People</span></div>
+      <div class="card"><div id="userList"></div><button class="btn secondary small needs-net" id="addUserBtn" type="button" style="margin-top:10px">Add person</button></div>
+      <div class="section-h"><span>Price list</span></div>
+      <div class="card"><p class="small muted" style="margin:0 0 4px">Prices fill in automatically when a service is entered and can still be changed for one customer. Tap a service to change it.</p><div id="priceList"></div><button class="btn secondary small needs-net" id="addSvcBtn" type="button" style="margin-top:10px">Add service</button></div>
+      <div class="section-h"><span>Activity log</span></div>
+      <div class="card"><p class="small muted" style="margin:0 0 4px">People added, PINs changed, prices changed, lockouts. Cannot be edited.</p><div id="eventList"></div><button class="link" id="evMore" type="button" hidden>Show more</button></div>
+    </div>
+    <div id="priceArea">
+      <div class="section-h"><span>Prices</span></div>
+      <div class="card"><div id="priceView"></div></div>
+    </div>
+    <div class="section-h" id="installH"><span>Home screen</span></div>
+    <div class="card" id="installCard"><p class="small" style="margin:0">iPhone: open this page in <b>Safari</b> → tap <b>Share</b> → <b>Add to Home Screen</b>.<br>Android: in <b>Chrome</b> tap <b>⋮</b> → <b>Add to Home screen</b> / <b>Install app</b>.</p></div>
+    <div class="section-h"><span>App</span></div>
+    <div class="card"><p class="small muted" id="syncInfo" style="margin:0 0 10px"></p>
+      <button class="btn secondary small" id="reloadAll" type="button">Reload all data</button></div>
+  </section>
+</main>
+
+<nav class="tabbar" role="tablist"><div class="in">
+  <button role="tab" data-tab="today" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="15.2" r="1.6" fill="currentColor" stroke="none"/></svg>Today</button>
+  <button role="tab" data-tab="history" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>History</button>
+  <button role="tab" data-tab="trends" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20v-6M10 20V9M15 20v-8M20 20V5"/></svg>Trends</button>
+  <button role="tab" data-tab="more" aria-selected="false"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>More</button>
+</div></nav>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script>
+"use strict";
+/* ================= basics ================= */
+const CFG = window.BROWTECH_CONFIG || {};
+const $ = id => document.getElementById(id);
+const LS_SESSION = "browtech.session.v1", LS_CACHE = "browtech.cache.v1", LS_PREFS = "browtech.prefs.v1";
+const TZ = "Africa/Accra"; // all days and times are Kumasi time, wherever the phone is
+const CATS = { pony: "Pony", piercing: "Piercing", brows: "Brows", tattoo: "Tattoo", lashes: "Lashes", nails: "Nails" };
+const CAT_KEYS = Object.keys(CATS);
+const PAY = { cash: "Cash", momo: "MoMo", card: "Card / bank", free: "Free" };
+const STATUS = { booked: "Booked", done: "Done", cancelled: "Cancelled", "no-show": "No-show", undone: "Undone" };
+const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+function load(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+let session = load(LS_SESSION, null);
+let prefs = Object.assign({}, load(LS_PREFS, {}));
+let db = load(LS_CACHE, null) || emptyDb();
+function emptyDb() { return { me: null, users: [], services: [], sales: [], appts: [], changes: [], undos: [], events: [], reset: null, synced: null }; }
+
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k === "style") e.style.cssText = v;
+    else if (k === "html") e.innerHTML = v; // only used with fixed, trusted SVG strings
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (["value", "checked", "disabled", "hidden", "type", "selected"].includes(k)) e[k] = v;
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) e.append(c instanceof Node ? c : String(c));
+  return e;
+}
+let toastTimer;
+function toast(msg, ms, actionLabel, action) {
+  const t = $("toast"); t.textContent = msg; t.classList.toggle("act", !!action);
+  if (action) t.append(h("button", { type: "button", onclick: () => { hideToast(); action(); } }, actionLabel));
+  t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, ms || 2600);
+}
+function hideToast() { $("toast").classList.remove("show", "act"); }
+const haptic = () => { try { navigator.vibrate && navigator.vibrate(12); } catch (e) {} };
+function nudge(el) {
+  el.focus();
+  if (REDUCED) return;
+  el.animate([{ transform: "translateX(0)" }, { transform: "translateX(-8px)" }, { transform: "translateX(8px)" }, { transform: "translateX(0)" }], { duration: 300, easing: "cubic-bezier(.36,.07,.19,.97)" });
+}
+
+/* ================= numbers & money ================= */
+const nf = new Intl.NumberFormat("en-US");
+const nf2 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = v => "GH₵ " + (Math.round(v * 100) % 100 ? nf2 : nf).format(v);
+const moneyPlain = v => (Math.round(v * 100) % 100 ? nf2 : nf).format(v);
+const cents = v => Math.round(Number(v) * 100);           // sum in whole pesewas to avoid rounding drift
+const fromCents = c => c / 100;
+function readMoney(inp) {
+  const s = inp.value.trim().replace(/\s/g, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) throw new Error("Enter the amount, e.g. 150 or 150.50");
+  const v = Number(s); if (v > 1000000) throw new Error("That amount is too high");
+  return v;
+}
+let shownMoney;
+function animateValue(el, from, to, fmt) {
+  if (REDUCED || from === undefined || from === to) { el.replaceChildren(...fmt(to)); return; }
+  const t0 = performance.now(), dur = 520;
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.replaceChildren(...fmt(p < 1 ? Math.round(from + (to - from) * e) : to));
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* ================= dates (Kumasi time) ================= */
+const pad = n => String(n).padStart(2, "0");
+const isoOf = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+const timeFmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
+const isoInTZ = ts => dayFmt.format(new Date(ts));
+const today = () => isoInTZ(Date.now());
+const nowHM = () => timeFmt.format(new Date());
+function fromISO(s) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+const addDays = (iso, n) => { const d = fromISO(iso); d.setDate(d.getDate() + n); return isoOf(d); };
+function isoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return { week: Math.ceil(((t - y0) / 86400000 + 1) / 7), year: t.getUTCFullYear() };
+}
+const niceDay = s => { const d = fromISO(s); return d ? d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : s; };
+const longDay = s => { const d = fromISO(s); return d ? d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : s; };
+const shortDay = s => { const d = fromISO(s); return d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : s; };
+const dayNoYear = s => { const d = fromISO(s); if (!d) return s; return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: s.slice(0, 4) === today().slice(0, 4) ? undefined : "numeric" }); };
+const relDay = s => s === today() ? "Today" : s === addDays(today(), 1) ? "Tomorrow" : s === addDays(today(), -1) ? "Yesterday" : dayNoYear(s);
+const timeOnly = ts => timeFmt.format(new Date(ts));
+const hm = t => (t || "").slice(0, 5);
+const stamp = s => { const d = new Date(s); return isNaN(d) ? "" : d.toLocaleString("en-GB", { timeZone: TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
+const stampCSV = s => { const d = new Date(s); return isNaN(d) ? "" : isoInTZ(d) + " " + timeFmt.format(d); };
+
+/* ================= server ================= */
+async function rpc(fn, args) {
+  let res;
+  const headers = { "Content-Type": "application/json", "apikey": CFG.key };
+  if ((CFG.key || "").split(".").length === 3) headers.Authorization = "Bearer " + CFG.key; // older JWT-style key
+  try {
+    res = await fetch(CFG.url.replace(/\/+$/, "") + "/rest/v1/rpc/" + fn, { method: "POST", headers, body: JSON.stringify(args || {}) });
+  } catch (e) { setOnline(false); throw new Error("No internet connection – nothing was saved."); }
+  setOnline(true);
+  const txt = await res.text(); let data; try { data = JSON.parse(txt); } catch (e) { data = txt; }
+  if (!res.ok) {
+    const msg = (data && data.message) || ("Server error " + res.status);
+    if (msg.includes("NOT_LOGGED_IN")) { endSession("Please log in again."); throw new Error("Please log in again."); }
+    throw new Error(msg);
+  }
+  return data;
+}
+const call = (fn, args) => rpc(fn, Object.assign({ p_token: session.token }, args));
+let online = true;
+function setOnline(v) {
+  online = v; $("syncDot").classList.toggle("off", !v);
+  const b = $("offlineBanner");
+  b.hidden = v;
+  if (!v) b.textContent = "No connection. Showing data from " + (db.synced ? stamp(db.synced) : "earlier") + ". You can't add entries until you're back online.";
+  document.querySelectorAll(".needs-net").forEach(x => x.disabled = !v);
+}
+
+let syncing = null;
+const lastId = list => list.length ? list[list.length - 1].id : 0;
+async function sync(full) {
+  if (!session) return;
+  if (checkSessionAge()) return;
+  if (syncing) return syncing;
+  syncing = (async () => {
+    try {
+      if (full) db = emptyDb();
+      const args = () => ({ p_token: session.token, p_after_sale: lastId(db.sales), p_after_appt: lastId(db.appts), p_after_change: lastId(db.changes), p_after_undo: lastId(db.undos), p_after_event: lastId(db.events) });
+      let s = await rpc("get_state", args());
+      // test entries were cleared on the server: drop the saved copy on this phone and load again
+      if (db.reset !== null && s.reset_count !== db.reset) {
+        db = emptyDb(); shownMoney = undefined;
+        s = await rpc("get_state", args());
+        setTimeout(() => toast("Test entries were cleared – fresh start"), 300);
+      }
+      db.me = s.me; db.users = s.users; db.services = s.services; db.reset = s.reset_count;
+      db.sales = db.sales.concat(s.sales); db.appts = db.appts.concat(s.appointments);
+      db.changes = db.changes.concat(s.changes); db.undos = db.undos.concat(s.undos);
+      db.events = db.events.concat(s.events);
+      db.synced = new Date().toISOString();
+      save(LS_CACHE, db);
+      session.user = s.me; save(LS_SESSION, session);
+      render();
+    } catch (e) {
+      if (online) toast(e.message, 4000);
+    } finally { syncing = null; }
+  })();
+  return syncing;
+}
+
+/* ================= derived data ================= */
+function derive() {
+  const userName = {}; db.users.forEach(u => userName[u.id] = u.name);
+  const svcById = {}; db.services.forEach(s => svcById[s.id] = s);
+  const undo = { sale: {}, appointment: {}, change: {} };
+  db.undos.forEach(u => undo[u.target][u.target_id] = u);
+  const saleByAppt = {};
+  db.sales.forEach(s => { if (s.appointment_id && !undo.sale[s.id]) saleByAppt[s.appointment_id] = s; });
+  const changesOf = {};
+  db.changes.forEach(c => (changesOf[c.appointment_id] = changesOf[c.appointment_id] || []).push(c));
+  const appt = {};
+  db.appts.forEach(a => {
+    const st = { a, status: "booked", date: a.appt_date, time: hm(a.appt_time), staff: a.staff_id, changes: changesOf[a.id] || [], live: [], sale: saleByAppt[a.id] || null };
+    if (undo.appointment[a.id]) st.status = "undone";
+    else {
+      st.changes.forEach(c => {
+        if (undo.change[c.id]) return;
+        st.live.push(c);
+        if (c.action === "moved") { st.date = c.new_date; st.time = hm(c.new_time); st.staff = c.new_staff_id; st.status = "booked"; }
+        else st.status = c.action;
+      });
+      if (st.sale) st.status = "done";
+    }
+    appt[a.id] = st;
+  });
+  const liveSales = db.sales.filter(s => !undo.sale[s.id]);
+  return { userName, svcById, undo, appt, liveSales, apptById: id => appt[id] };
+}
+const activeUsers = () => db.users.filter(u => u.active);
+const staffName = (D, id) => id ? (D.userName[id] || "?") : "Anyone";
+
+/* ================= render ================= */
+let currentTab = "today";
+function render() {
+  if (!session) return;
+  const D = derive();
+  $("whoName").textContent = session.user.name;
+  updateAgo();
+  renderToday(D);
+  if (currentTab === "history") renderHistory(D);
+  if (currentTab === "trends") renderTrends(D);
+  if (currentTab === "more") renderMore(D);
+}
+function updateAgo() {
+  if (!db.synced) { $("syncAgo").textContent = ""; return; }
+  const s = Math.round((Date.now() - new Date(db.synced)) / 1000);
+  $("syncAgo").textContent = "· updated " + (s < 60 ? "just now" : s < 3600 ? Math.round(s / 60) + " min ago" : stamp(db.synced));
+}
+
+/* ---------- entry rows ---------- */
+const CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
+const MOVE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M14 6l6 6-6 6"/></svg>';
+const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+const catIco = (cat, html) => h("div", { class: "ico c-" + (CATS[cat] ? cat : "other"), "aria-hidden": "true", html: html || null }, html ? null : (CATS[cat] || "?").slice(0, 2));
+function undoneLine(u, D) { return u ? h("div", { class: "sub why" }, "Undone: " + u.reason + " – " + (D.userName[u.user_id] || "?") + ", " + stamp(u.logged_at)) : null; }
+
+function saleEl(s, D, opts) {
+  opts = opts || {};
+  const u = D.undo.sale[s.id];
+  const sub = [];
+  if (s.customer) sub.push(s.customer + (s.phone ? " · " + s.phone : ""));
+  else if (s.phone) sub.push(s.phone);
+  sub.push(PAY[s.payment] + " · by " + (D.userName[s.staff_id] || "?"));
+  if (s.appointment_id) sub.push("from booking");
+  if (s.list_price !== null && s.list_price !== undefined && cents(s.list_price) !== cents(s.amount)) sub.push("list price " + money(s.list_price));
+  if (s.note) sub.push(s.note);
+  return h("div", { class: "entry" + (u ? " struck" : "") + (opts.tap ? " tap" : ""), onclick: opts.tap ? () => saleSheet(s) : null },
+    catIco(s.category),
+    h("div", { class: "main" },
+      h("div", { class: "ttl" }, s.service_name, u ? h("span", { class: "tag undone" }, "Undone") : null),
+      h("div", { class: "sub" }, sub.join(" · ")),
+      opts.meta !== false ? h("div", { class: "sub small" }, (opts.showDay ? niceDay(s.entry_date) + " · " : "") + "entered by " + (D.userName[s.user_id] || "?") + " · " + (opts.showDay || isoInTZ(s.logged_at) !== s.entry_date ? stamp(s.logged_at) : timeOnly(s.logged_at)) + " · S" + s.id) : null,
+      undoneLine(u, D)),
+    h("div", { class: "side" },
+      h("div", { class: "amt" }, money(s.amount)),
+      opts.undo && !u ? h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("sale", s.id, saleEl(s, D, { meta: false })); } }, "Undo") : null));
+}
+function apptLogEl(a, D, withUndo) {
+  const st = D.appt[a.id], u = D.undo.appointment[a.id];
+  return h("div", { class: "entry" + (u ? " struck" : "") + " tap", onclick: () => apptSheet(a.id) },
+    catIco(a.category, CAL_SVG),
+    h("div", { class: "main" },
+      h("div", { class: "ttl" }, "Booked: " + a.customer, u ? h("span", { class: "tag undone" }, "Undone") : statusTag(st)),
+      h("div", { class: "sub" }, a.service_name + " · for " + relDay(a.appt_date) + " " + hm(a.appt_time) + " · " + staffName(D, a.staff_id) + (a.note ? " · " + a.note : "")),
+      h("div", { class: "sub small" }, "entered by " + (D.userName[a.user_id] || "?") + " · " + timeOnly(a.logged_at) + " · B" + a.id),
+      undoneLine(u, D)),
+    withUndo && !u && st.status !== "done" ? h("div", { class: "side" }, h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("appointment", a.id, apptLogEl(a, D, false)); } }, "Undo")) : null);
+}
+function changeText(c, D) {
+  if (c.action === "moved") return "to " + relDay(c.new_date) + " " + hm(c.new_time) + " · " + staffName(D, c.new_staff_id);
+  return c.action === "cancelled" ? "Cancelled" : "Customer didn't come";
+}
+function changeEl(c, D, withUndo) {
+  const a = db.appts.find(x => x.id === c.appointment_id) || {};
+  const u = D.undo.change[c.id];
+  return h("div", { class: "entry" + (u ? " struck" : "") + " tap", onclick: () => apptSheet(c.appointment_id) },
+    catIco(a.category, c.action === "moved" ? MOVE_SVG : X_SVG),
+    h("div", { class: "main" },
+      h("div", { class: "ttl" }, ({ moved: "Moved", cancelled: "Cancelled", "no-show": "No-show" })[c.action] + ": " + (a.customer || ""), u ? h("span", { class: "tag undone" }, "Undone") : null),
+      h("div", { class: "sub" }, (a.service_name || "") + " · " + changeText(c, D) + (c.note ? " · " + c.note : "")),
+      h("div", { class: "sub small" }, "entered by " + (D.userName[c.user_id] || "?") + " · " + timeOnly(c.logged_at) + " · C" + c.id),
+      undoneLine(u, D)),
+    withUndo && !u ? h("div", { class: "side" }, h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("change", c.id, changeEl(c, D, false)); } }, "Undo")) : null);
+}
+function statusTag(st) {
+  if (!st) return null;
+  if (st.status === "done") return h("span", { class: "tag done" }, "Done");
+  if (st.status === "cancelled" || st.status === "no-show") return h("span", { class: "tag warn" }, STATUS[st.status]);
+  if (st.status === "undone") return h("span", { class: "tag undone" }, "Undone");
+  return h("span", { class: "tag tint" }, "Booked");
+}
+
+/* ---------- today ---------- */
+let apptDay = null;
+function renderToday(D) {
+  const t = today();
+  if (!apptDay) apptDay = t;
+  $("todayDate").textContent = longDay(t);
+  const todays = D.liveSales.filter(s => s.entry_date === t);
+  const inc = todays.reduce((a, s) => a + cents(s.amount), 0);
+  const len = moneyPlain(fromCents(inc)).length;
+  $("incToday").style.fontSize = len <= 6 ? "" : len <= 8 ? "28px" : "23px";
+  animateValue($("incToday"), shownMoney, inc, c => [h("small", null, "GH₵"), moneyPlain(fromCents(c))]);
+  shownMoney = inc;
+  $("incSub").textContent = todays.length ? todays.length + " service" + (todays.length === 1 ? "" : "s") : "No services yet";
+  const apToday = Object.values(D.appt).filter(st => st.date === t && st.status !== "undone");
+  const open = apToday.filter(st => st.status === "booked");
+  $("apptToday").textContent = nf.format(apToday.filter(st => st.status === "booked" || st.status === "done").length);
+  $("apptSub").textContent = open.length ? open.length + " still to come" : apToday.length ? "None left today" : "None today";
+  renderDays(D);
+  renderApptList(D);
+  const rc = $("recent"); rc.innerHTML = "";
+  const last = db.sales.slice(-5).reverse();
+  if (!last.length) rc.append(h("div", { class: "empty" }, "No services entered yet."));
+  last.forEach(s => rc.append(saleEl(s, D, { tap: true, meta: false })));
+}
+function renderDays(D) {
+  const strip = $("dayStrip"), t = today();
+  const count = {};
+  Object.values(D.appt).forEach(st => { if (st.status === "booked" || st.status === "done") count[st.date] = (count[st.date] || 0) + 1; });
+  const days = []; for (let i = 0; i < 14; i++) days.push(addDays(t, i));
+  if (!days.includes(apptDay)) days.unshift(apptDay);
+  const prevScroll = strip.scrollLeft;
+  strip.innerHTML = "";
+  days.forEach(d => {
+    const dt = fromISO(d);
+    strip.append(h("button", { class: "daychip press", type: "button", "aria-pressed": String(d === apptDay), "aria-label": longDay(d) + ", " + (count[d] || 0) + " appointments", onclick: () => { apptDay = d; renderDays(derive()); renderApptList(derive()); } },
+      h("span", { class: "dw" }, d === t ? "Today" : dt.toLocaleDateString("en-GB", { weekday: "short" })),
+      h("span", { class: "dn" }, dt.getDate()),
+      h("span", { class: "dc" }, count[d] ? count[d] + " appt" : "")));
+  });
+  const pick = h("input", { type: "date", "aria-label": "Pick another date", onchange: e => { if (e.target.value) { apptDay = e.target.value; render(); } } });
+  strip.append(h("label", { class: "daychip pick" }, "Other", h("span", null, "date"), pick));
+  strip.scrollLeft = prevScroll;
+}
+function renderApptList(D) {
+  $("apptTitle").textContent = "Appointments · " + relDay(apptDay);
+  const box = $("apptList"); box.innerHTML = "";
+  const list = Object.values(D.appt).filter(st => st.date === apptDay && st.status !== "undone")
+    .sort((a, b) => a.time.localeCompare(b.time) || a.a.id - b.a.id);
+  if (!list.length) { box.append(h("div", { class: "empty" }, "No appointments " + (apptDay === today() ? "today" : "on this day") + ".")); return; }
+  list.forEach(st => box.append(apptRow(st, D)));
+}
+function apptRow(st, D) {
+  const a = st.a, off = st.status === "cancelled" || st.status === "no-show";
+  return h("div", { class: "entry tap" + (off ? " dim" : ""), onclick: () => apptSheet(a.id) },
+    h("div", { class: "time" }, st.time),
+    h("div", { class: "main" },
+      h("div", { class: "ttl" }, a.customer, st.status !== "booked" ? statusTag(st) : null),
+      h("div", { class: "sub" }, h("span", { class: "key", style: "background:var(--c-" + (CATS[a.category] ? a.category : "other") + ")" }), a.service_name + " · " + staffName(D, st.staff)),
+      a.phone || a.note ? h("div", { class: "sub" }, [a.phone, a.note].filter(Boolean).join(" · ")) : null,
+      st.sale ? h("div", { class: "sub" }, "Paid " + money(st.sale.amount) + " · " + PAY[st.sale.payment]) : null),
+    st.status === "booked" ? h("div", { class: "side" }, h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); saleFormSheet({ appt: st }); } }, "Done")) : null);
+}
+function todaySheet() {
+  const D = derive(), t = today();
+  const todays = D.liveSales.filter(s => s.entry_date === t);
+  const sum = f => { const m = {}; todays.forEach(s => { const k = f(s); m[k] = (m[k] || 0) + cents(s.amount); }); return m; };
+  const tbl = (title, m, label) => {
+    const keys = Object.keys(m).sort((a, b) => m[b] - m[a]);
+    return [h("div", { class: "lbl" }, title), h("div", { class: "card" }, keys.length ? h("table", { class: "t" }, keys.map(k => h("tr", null, h("td", null, label(k)), h("td", { class: "n" }, money(fromCents(m[k])))))) : h("div", { class: "empty" }, "Nothing yet"))];
+  };
+  sheet("Income today", [
+    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, longDay(t) + " · " + todays.length + " service" + (todays.length === 1 ? "" : "s") + " · " + money(fromCents(todays.reduce((a, s) => a + cents(s.amount), 0)))),
+    tbl("By payment", sum(s => s.payment), k => PAY[k]),
+    tbl("By staff", sum(s => s.staff_id), k => D.userName[k] || "?"),
+    tbl("By category", sum(s => s.category), k => CATS[k] || k),
+    h("div", { class: "lbl" }, "Services today"),
+    h("div", { class: "card" }, todays.length ? todays.slice().reverse().map(s => saleEl(s, D, { meta: false })) : h("div", { class: "empty" }, "None yet"))
+  ], null, null);
+}
+
+/* ---------- service picker ---------- */
+function serviceSelect(id, selected) {
+  const sel = h("select", { id });
+  sel.append(h("option", { value: "" }, "Choose a service…"));
+  CAT_KEYS.forEach(c => {
+    const svcs = db.services.filter(s => s.category === c && (s.active || s.id === selected));
+    if (!svcs.length) return;
+    sel.append(h("optgroup", { label: CATS[c] }, svcs.map(s => h("option", { value: String(s.id) }, s.name + (s.price > 0 ? " — " + money(s.price) : "")))));
+  });
+  sel.append(h("optgroup", { label: "Not on the price list" }, h("option", { value: "other" }, "Other service (type it)…")));
+  sel.value = selected ? String(selected) : "";
+  return sel;
+}
+function otherFields(prefix) {
+  const cat = h("select", { id: prefix + "OCat" }, h("option", { value: "" }, "Category…"), CAT_KEYS.map(c => h("option", { value: c }, CATS[c])));
+  const nm = h("input", { id: prefix + "OName", autocomplete: "off", placeholder: "e.g. Henna brows" });
+  const box = h("div", { class: "grid2", hidden: true }, field("Category", cat), field("Service name", nm));
+  return { box, cat, nm };
+}
+function staffSelect(id, value, withAnyone) {
+  const sel = h("select", { id });
+  if (withAnyone) sel.append(h("option", { value: "" }, "Anyone"));
+  activeUsers().forEach(u => sel.append(h("option", { value: String(u.id) }, u.name)));
+  if (value && !activeUsers().some(u => u.id === value)) sel.append(h("option", { value: String(value) }, (db.users.find(u => u.id === value) || {}).name || "?"));
+  sel.value = value ? String(value) : (withAnyone ? "" : String(session.user.id));
+  return sel;
+}
+function readService(sel, o) {
+  if (sel.value === "other") {
+    if (!o.cat.value) { nudge(o.cat); throw new Error("Choose the category"); }
+    if (!o.nm.value.trim()) { nudge(o.nm); throw new Error("Type the service name"); }
+    return { p_service_id: null, p_category: o.cat.value, p_name: o.nm.value.trim() };
+  }
+  if (!sel.value) { nudge(sel); throw new Error("Choose a service"); }
+  return { p_service_id: +sel.value, p_category: null, p_name: null };
+}
+
+/* ---------- "service done" sheet ---------- */
+function saleFormSheet(opts) {
+  opts = opts || {};
+  const st = opts.appt, a = st ? st.a : null;
+  const sel = serviceSelect("sSvc", a ? a.service_id : null);
+  const o = otherFields("s");
+  if (a && !a.service_id) { sel.value = "other"; o.cat.value = a.category; o.nm.value = a.service_name; }
+  const amt = h("input", { id: "sAmt", class: "money", inputmode: "decimal", autocomplete: "off", placeholder: "0", "aria-label": "Amount paid in Ghana cedis" });
+  const amtHint = h("div", { class: "hint", style: "text-align:center" });
+  let pay = "cash";
+  const paySeg = seg({ cash: "Cash", momo: "MoMo", card: "Card / bank" }, pay, v => { pay = v; });
+  const payBlk = h("div", { class: "blk" }, h("span", { class: "lbl" }, "Paid with"), paySeg);
+  const staff = staffSelect("sStaff", st && st.staff ? st.staff : session.user.id, false);
+  const date = h("input", { id: "sDate", type: "date", value: today(), max: today() });
+  const cust = h("input", { id: "sCust", autocomplete: "off", placeholder: "Optional", value: a ? a.customer : "" });
+  const phone = h("input", { id: "sPhone", type: "tel", autocomplete: "off", placeholder: "Optional", value: a && a.phone ? a.phone : "" });
+  const note = h("input", { id: "sNote", autocomplete: "off", placeholder: "Optional" });
+  let touched = false;
+  const listPrice = () => { const s = D0.svcById[sel.value]; return s && s.price > 0 ? s.price : null; };
+  const D0 = derive();
+  const upd = () => {
+    o.box.hidden = sel.value !== "other";
+    const lp = listPrice();
+    if (!touched) amt.value = lp !== null ? String(lp) : "";
+    let v = null; try { v = readMoney(amt); } catch (e) {}
+    amtHint.textContent = lp !== null ? (v !== null && cents(v) !== cents(lp) ? "Price list: " + money(lp) + " · changed for this customer" : "Price list: " + money(lp)) : sel.value && sel.value !== "other" ? "No price on the list yet – type the amount" : "Amount paid in GH₵";
+    payBlk.hidden = v === 0;
+  };
+  sel.addEventListener("change", () => { touched = false; upd(); });
+  amt.addEventListener("input", () => { touched = true; upd(); });
+  upd();
+  const s = sheet(a ? "Done: " + a.customer : "Service done", [
+    a ? h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, "Appointment " + relDay(st.date) + " " + st.time + " · " + a.service_name) : null,
+    field("Service", sel), o.box,
+    h("div", { class: "blk" }, h("div", { class: "moneywrap" }, h("span", { class: "cur", "aria-hidden": "true" }, "GH₵"), amt), amtHint),
+    payBlk,
+    h("div", { class: "rows" },
+      h("div", { class: "rowf" }, h("label", { for: "sStaff" }, "Done by"), staff),
+      h("div", { class: "rowf" }, h("label", { for: "sDate" }, "Date"), date),
+      h("div", { class: "rowf" }, h("label", { for: "sCust" }, "Customer"), cust),
+      h("div", { class: "rowf" }, h("label", { for: "sPhone" }, "Phone"), phone),
+      h("div", { class: "rowf" }, h("label", { for: "sNote" }, "Note"), note))
+  ], "Save", async () => {
+    const svc = readService(sel, o);
+    let v; try { v = readMoney(amt); } catch (e) { nudge(amt); throw e; }
+    if (!date.value) throw new Error("Choose the date");
+    const r = await call("add_sale", Object.assign(svc, { p_amount: v, p_payment: v === 0 ? "free" : pay, p_staff_id: +staff.value, p_date: date.value,
+      p_customer: cust.value, p_phone: phone.value, p_note: note.value, p_appointment_id: a ? a.id : null }));
+    await sync();
+    toast("Saved · " + money(v), 6000, "Undo", () => quickUndo("sale", r.id));
+  }, { focus: false });
+  return s;
+}
+
+/* ---------- booking sheet ---------- */
+function nextSlot() { const [H, M] = nowHM().split(":").map(Number); let m = H * 60 + M + 30; m = Math.ceil(m / 30) * 30; if (m >= 24 * 60) m = 9 * 60; return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
+function bookSheet() {
+  const cust = h("input", { id: "bCust", autocomplete: "off" });
+  const phone = h("input", { id: "bPhone", type: "tel", autocomplete: "off", placeholder: "Optional" });
+  const sel = serviceSelect("bSvc", null);
+  const o = otherFields("b");
+  sel.addEventListener("change", () => { o.box.hidden = sel.value !== "other"; });
+  const date = h("input", { id: "bDate", type: "date", value: apptDay && apptDay >= today() ? apptDay : today(), min: today() });
+  const time = h("input", { id: "bTime", type: "time", step: 300, value: apptDay && apptDay > today() ? "10:00" : nextSlot() });
+  const staff = staffSelect("bStaff", null, true);
+  const note = h("input", { id: "bNote", autocomplete: "off", placeholder: "Optional" });
+  sheet("Book appointment", [
+    field("Customer name", cust), field("Phone", phone),
+    field("Service", sel), o.box,
+    h("div", { class: "rows" },
+      h("div", { class: "rowf" }, h("label", { for: "bDate" }, "Date"), date),
+      h("div", { class: "rowf" }, h("label", { for: "bTime" }, "Time"), time),
+      h("div", { class: "rowf" }, h("label", { for: "bStaff" }, "With"), staff),
+      h("div", { class: "rowf" }, h("label", { for: "bNote" }, "Note"), note))
+  ], "Book", async () => {
+    if (!cust.value.trim()) { nudge(cust); throw new Error("Enter the customer's name"); }
+    const svc = readService(sel, o);
+    if (!date.value) throw new Error("Choose the date");
+    if (!/^\d{2}:\d{2}/.test(time.value)) throw new Error("Choose the time");
+    const r = await call("book_appointment", Object.assign(svc, { p_date: date.value, p_time: time.value, p_staff_id: staff.value ? +staff.value : null, p_customer: cust.value, p_phone: phone.value, p_note: note.value }));
+    apptDay = date.value;
+    await sync();
+    toast("Booked · " + relDay(date.value) + " " + time.value, 6000, "Undo", () => quickUndo("appointment", r.id));
+  });
+}
+
+/* ---------- appointment details ---------- */
+function apptSheet(id) {
+  const D = derive(), st = D.appt[id]; if (!st) return;
+  const a = st.a;
+  const hist = [h("div", { class: "entry noico" }, h("div", { class: "main" }, h("div", { class: "ttl" }, "Booked for " + niceDay(a.appt_date) + " " + hm(a.appt_time)), h("div", { class: "sub" }, "with " + staffName(D, a.staff_id) + " · by " + (D.userName[a.user_id] || "?") + " " + stamp(a.logged_at)), undoneLine(D.undo.appointment[a.id], D)))];
+  st.changes.forEach(c => { const u = D.undo.change[c.id]; hist.push(h("div", { class: "entry noico" + (u ? " struck" : "") }, h("div", { class: "main" }, h("div", { class: "ttl" }, (c.action === "moved" ? "Moved " : "") + changeText(c, D)), h("div", { class: "sub" }, "by " + (D.userName[c.user_id] || "?") + " " + stamp(c.logged_at) + (c.note ? " · " + c.note : "")), undoneLine(u, D)))); });
+  db.sales.filter(s => s.appointment_id === a.id).forEach(s => { const u = D.undo.sale[s.id]; hist.push(h("div", { class: "entry noico" + (u ? " struck" : "") }, h("div", { class: "main" }, h("div", { class: "ttl" }, "Done · paid " + money(s.amount) + " (" + PAY[s.payment] + ")"), h("div", { class: "sub" }, "by " + (D.userName[s.staff_id] || "?") + " · entered " + stamp(s.logged_at)), undoneLine(u, D)))); });
+  const acts = [];
+  let s;
+  const go = fn => () => { s.close(); setTimeout(fn, 180); };
+  if (st.status === "booked") {
+    acts.push(h("button", { class: "choice needs-net", type: "button", disabled: !online, onclick: go(() => saleFormSheet({ appt: st })) }, "Mark as done…"));
+    acts.push(h("button", { class: "choice needs-net", type: "button", disabled: !online, onclick: go(() => moveSheet(st)) }, "Change date, time or staff…"));
+    acts.push(h("button", { class: "choice needs-net", type: "button", disabled: !online, onclick: go(() => statusSheet(st, "no-show")) }, "Customer didn't come…"));
+    acts.push(h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: go(() => statusSheet(st, "cancelled")) }, "Cancel appointment…"));
+  }
+  const undoActs = [];
+  if (st.status === "done" && st.sale) undoActs.push(h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: go(() => undoSheet("sale", st.sale.id, saleEl(st.sale, derive(), { meta: false }))) }, "Undo “done” (wrong entry)…"));
+  else if (st.status !== "undone") {
+    const lastLive = st.live[st.live.length - 1];
+    if (lastLive) undoActs.push(h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: go(() => undoSheet("change", lastLive.id, changeEl(lastLive, derive(), false))) }, "Undo last change (" + (lastLive.action === "moved" ? "move" : lastLive.action) + ")…"));
+    undoActs.push(h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: go(() => undoSheet("appointment", a.id, apptLogEl(a, derive(), false))) }, "Undo booking (entered by mistake)…"));
+  }
+  const tel = (a.phone || "").replace(/[^\d+]/g, "");
+  const wa = tel ? tel.replace(/^\+/, "").replace(/^0/, "233") : "";
+  s = sheet(a.customer, [
+    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, "B" + a.id),
+    h("div", { class: "card" }, h("table", { class: "t" },
+      h("tr", null, h("td", null, "Status"), h("td", { class: "n" }, statusTag(st) || "")),
+      h("tr", null, h("td", null, "When"), h("td", { class: "n" }, relDay(st.date) + " · " + st.time)),
+      h("tr", null, h("td", null, "Service"), h("td", { class: "n" }, a.service_name)),
+      h("tr", null, h("td", null, "With"), h("td", { class: "n" }, staffName(D, st.staff))),
+      a.phone ? h("tr", null, h("td", null, "Phone"), h("td", { class: "n" }, a.phone)) : null,
+      a.note ? h("tr", null, h("td", null, "Note"), h("td", { class: "n", style: "white-space:normal" }, a.note)) : null)),
+    tel ? h("div", { class: "row", style: "margin-bottom:14px" }, h("a", { class: "btn secondary small", href: "tel:" + tel }, "Call"), h("a", { class: "btn secondary small", href: "https://wa.me/" + wa, target: "_blank", rel: "noopener" }, "WhatsApp")) : null,
+    acts.length ? h("div", { class: "choices" }, acts) : null,
+    h("div", { class: "lbl" }, "History"),
+    h("div", { class: "card" }, hist),
+    undoActs.length ? h("div", { class: "choices" }, undoActs) : null
+  ], null, null);
+}
+function moveSheet(st) {
+  const date = h("input", { id: "mDate", type: "date", value: st.date, min: today() });
+  const time = h("input", { id: "mTime", type: "time", step: 300, value: st.time });
+  const staff = staffSelect("mStaff", st.staff, true);
+  const note = h("input", { id: "mNote", autocomplete: "off", placeholder: "Optional, e.g. customer asked" });
+  sheet("Change appointment", [
+    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, st.a.customer + " · " + st.a.service_name + " · now " + relDay(st.date) + " " + st.time),
+    h("div", { class: "rows" },
+      h("div", { class: "rowf" }, h("label", { for: "mDate" }, "Date"), date),
+      h("div", { class: "rowf" }, h("label", { for: "mTime" }, "Time"), time),
+      h("div", { class: "rowf" }, h("label", { for: "mStaff" }, "With"), staff),
+      h("div", { class: "rowf" }, h("label", { for: "mNote" }, "Note"), note))
+  ], "Save change", async () => {
+    await call("change_appointment", { p_id: st.a.id, p_action: "moved", p_date: date.value, p_time: time.value, p_staff_id: staff.value ? +staff.value : null, p_note: note.value });
+    apptDay = date.value;
+    await sync(); toast("Moved to " + relDay(date.value) + " " + time.value);
+  }, { focus: false });
+}
+function statusSheet(st, action) {
+  const note = h("input", { id: "xNote", autocomplete: "off", placeholder: "Optional" });
+  sheet(action === "cancelled" ? "Cancel appointment?" : "Customer didn't come?", [
+    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, st.a.customer + " · " + st.a.service_name + " · " + relDay(st.date) + " " + st.time),
+    field("Note", note)
+  ], action === "cancelled" ? "Cancel appointment" : "Mark as no-show", async () => {
+    await call("change_appointment", { p_id: st.a.id, p_action: action, p_date: null, p_time: null, p_staff_id: null, p_note: note.value });
+    await sync(); toast(action === "cancelled" ? "Appointment cancelled" : "Marked as no-show");
+  }, { danger: true, focus: false });
+}
+function saleSheet(s0) {
+  const D = derive(), u = D.undo.sale[s0.id];
+  let sh;
+  sh = sheet(s0.service_name, [
+    h("div", { class: "card" }, saleEl(s0, D, { showDay: true })),
+    s0.appointment_id ? h("button", { class: "link", type: "button", onclick: () => { sh.close(); setTimeout(() => apptSheet(s0.appointment_id), 180); } }, "Open the appointment") : null,
+    !u ? h("div", { class: "choices" }, h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: () => { sh.close(); setTimeout(() => undoSheet("sale", s0.id, saleEl(s0, derive(), { meta: false })), 180); } }, "Undo this entry…")) : null
+  ], null, null);
+}
+
+/* ---------- undo ---------- */
+const TARGET_NAME = { sale: "service entry", appointment: "booking", change: "booking change" };
+function undoSheet(target, id, preview) {
+  const why = h("input", { id: "uWhy", autocomplete: "off", placeholder: "e.g. wrong amount, entered twice" });
+  sheet("Undo " + TARGET_NAME[target], [
+    h("div", { class: "card", style: "box-shadow:none;border:.5px solid var(--sep)" }, preview),
+    h("p", { class: "small muted" }, target === "sale" ? "The entry stays in the log, shown in red, and no longer counts as income. If the amount or service was wrong, enter it again correctly afterwards." :
+      target === "appointment" ? "The booking stays in the log, shown in red, and disappears from the appointment list." :
+      "The change stays in the log, shown in red, and the appointment goes back to how it was before."),
+    field("What was wrong? (required)", why)],
+    "Undo", async () => {
+      if (!why.value.trim()) { nudge(why); throw new Error("Write what was wrong"); }
+      await call("undo_entry", { p_target: target, p_id: id, p_reason: why.value });
+      await sync(); toast("Undone – shown in red in History");
+    }, { danger: true });
+}
+async function quickUndo(target, id) {
+  try {
+    await call("undo_entry", { p_target: target, p_id: id, p_reason: "Undone right after entering" });
+    haptic(); await sync(); toast("Undone");
+  } catch (e) { toast(e.message, 4500); }
+}
+
+/* ---------- history ---------- */
+let histLimit = 80;
+function histFilter() {
+  return { text: $("fText").value.trim().toLowerCase(), type: $("fType").value, cat: $("fCat").value, staff: $("fStaff").value, user: $("fUser").value, pay: $("fPay").value, from: $("fFrom").value, to: $("fTo").value };
+}
+function allItems(D) {
+  const items = [];
+  db.sales.forEach(s => items.push({ type: "sale", id: s.id, day: s.entry_date, at: s.logged_at, cat: s.category, staff: s.staff_id, user: s.user_id, pay: s.payment, undone: D.undo.sale[s.id], text: [s.customer, s.phone, s.note, s.service_name].join(" "), r: s }));
+  db.appts.forEach(a => items.push({ type: "appointment", id: a.id, day: isoInTZ(a.logged_at), at: a.logged_at, cat: a.category, staff: a.staff_id, user: a.user_id, pay: null, undone: D.undo.appointment[a.id], text: [a.customer, a.phone, a.note, a.service_name].join(" "), r: a }));
+  db.changes.forEach(c => { const a = db.appts.find(x => x.id === c.appointment_id) || {}; items.push({ type: "change", id: c.id, day: isoInTZ(c.logged_at), at: c.logged_at, cat: a.category, staff: c.action === "moved" ? c.new_staff_id : a.staff_id, user: c.user_id, pay: null, undone: D.undo.change[c.id], text: [a.customer, a.phone, c.note, a.service_name].join(" "), r: c }); });
+  return items;
+}
+function filtered(D) {
+  const f = histFilter();
+  return allItems(D).filter(it =>
+    (!f.type || (f.type === "undone" ? !!it.undone : it.type === f.type)) && (!f.cat || it.cat === f.cat) &&
+    (!f.staff || String(it.staff) === f.staff) && (!f.user || String(it.user) === f.user) && (!f.pay || it.pay === f.pay) &&
+    (!f.from || it.day >= f.from) && (!f.to || it.day <= f.to) && (!f.text || it.text.toLowerCase().includes(f.text)))
+    .sort((a, b) => b.day.localeCompare(a.day) || b.at.localeCompare(a.at));
+}
+function fillSelect(sel, opts) { const cur = sel.value; sel.innerHTML = ""; sel.append(h("option", { value: "" }, "All"), opts.map(([v, t]) => h("option", { value: v }, t))); sel.value = cur; }
+function renderHistory(D) {
+  fillSelect($("fCat"), CAT_KEYS.map(c => [c, CATS[c]]));
+  fillSelect($("fStaff"), db.users.map(u => [String(u.id), u.name]));
+  fillSelect($("fUser"), db.users.map(u => [String(u.id), u.name]));
+  const f = histFilter(); const active = Object.values(f).filter(Boolean).length;
+  $("filterSummary").textContent = active ? active + " filter" + (active > 1 ? "s" : "") + " on" : "All entries";
+  const list = filtered(D);
+  const live = list.filter(it => it.type === "sale" && !it.undone);
+  const inc = live.reduce((a, it) => a + cents(it.r.amount), 0);
+  $("histSum").innerHTML = "";
+  $("histSum").append(h("table", { class: "t" },
+    h("tr", null, h("th", null, "Entries"), h("th", { class: "n" }, "Services"), h("th", { class: "n" }, "Income"), h("th", { class: "n" }, "Undone")),
+    h("tr", null, h("td", null, nf.format(list.length)), h("td", { class: "n" }, nf.format(live.length)), h("td", { class: "n" }, money(fromCents(inc))), h("td", { class: "n" + (list.some(i => i.undone) ? " neg" : "") }, nf.format(list.filter(i => i.undone).length)))));
+  const box = $("histList"); box.innerHTML = "";
+  if (!list.length) { box.append(h("div", { class: "empty" }, "No entries.")); $("histMore").hidden = true; return; }
+  let lastDay = null, group = null;
+  list.slice(0, histLimit).forEach(it => {
+    if (it.day !== lastDay) {
+      lastDay = it.day;
+      const dayInc = list.filter(x => x.day === it.day && x.type === "sale" && !x.undone).reduce((a, x) => a + cents(x.r.amount), 0);
+      box.append(h("div", { class: "day" }, h("span", null, relDay(it.day)), dayInc ? h("span", null, money(fromCents(dayInc))) : null));
+      group = h("div", { class: "group" }); box.append(group);
+    }
+    group.append(it.type === "sale" ? saleEl(it.r, D, { undo: true, tap: true }) : it.type === "appointment" ? apptLogEl(it.r, D, true) : changeEl(it.r, D, true));
+  });
+  $("histMore").hidden = list.length <= histLimit;
+}
+
+function exportCSV() {
+  const D = derive(), list = filtered(D);
+  if (!list.length) { toast("Nothing to export"); return; }
+  const sep = ",";
+  const cell = v => { let s = v === null || v === undefined ? "" : String(v); if (/^[=+\-@]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s; if (/["\n\r,]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"'; return s; };
+  const amt = v => v === null || v === undefined ? "" : (Math.round(Number(v) * 100) / 100).toFixed(2);
+  const head = ["ID", "Type", "Entered at", "Date", "Appointment date", "Appointment time", "Category", "Service", "Customer", "Phone", "Amount (GHS)", "List price (GHS)", "Payment", "Staff", "Entered by", "Change", "Note", "Status", "Undo reason", "Undone by", "Undone at"];
+  const lines = [head.map(cell).join(sep)];
+  list.forEach(it => {
+    const u = it.undone, r = it.r;
+    const undoCols = [u ? "Undone" : "OK", u ? u.reason : "", u ? D.userName[u.user_id] || "" : "", u ? stampCSV(u.logged_at) : ""];
+    if (it.type === "sale") lines.push(["S" + r.id, "Service done", stampCSV(r.logged_at), r.entry_date, "", "", CATS[r.category] || r.category, r.service_name, r.customer, r.phone, amt(r.amount), amt(r.list_price), PAY[r.payment], D.userName[r.staff_id], D.userName[r.user_id], r.appointment_id ? "From booking B" + r.appointment_id : "", r.note, ...undoCols].map(cell).join(sep));
+    else if (it.type === "appointment") lines.push(["B" + r.id, "Booking", stampCSV(r.logged_at), isoInTZ(r.logged_at), r.appt_date, hm(r.appt_time), CATS[r.category] || r.category, r.service_name, r.customer, r.phone, "", "", "", staffName(D, r.staff_id), D.userName[r.user_id], "Now: " + STATUS[D.appt[r.id].status], r.note, ...undoCols].map(cell).join(sep));
+    else { const a = db.appts.find(x => x.id === r.appointment_id) || {};
+      lines.push(["C" + r.id, "Booking change", stampCSV(r.logged_at), isoInTZ(r.logged_at), r.new_date || a.appt_date, r.new_time ? hm(r.new_time) : hm(a.appt_time), CATS[a.category] || "", a.service_name, a.customer, a.phone, "", "", "", r.action === "moved" ? staffName(D, r.new_staff_id) : staffName(D, a.staff_id), D.userName[r.user_id], (r.action === "moved" ? "Moved" : STATUS[r.action]) + " (booking B" + r.appointment_id + ")", r.note, ...undoCols].map(cell).join(sep)); }
+  });
+  const a = h("a", { href: URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" })), download: "browtech_history_" + today() + ".csv" });
+  document.body.append(a); a.click(); a.remove();
+  toast("Downloaded " + list.length + " entries");
+}
+
+/* ---------- trends ---------- */
+function bucketKey(dateStr, step) {
+  if (step === "day") return dateStr;
+  if (step === "month") return dateStr.slice(0, 7);
+  const w = isoWeek(fromISO(dateStr)); return w.year + "-W" + pad(w.week);
+}
+function bucketLabel(key, step) {
+  if (step === "day") return shortDay(key);
+  if (step === "month") { const [y, m] = key.split("-"); return new Date(+y, +m - 1, 1).toLocaleDateString("en-GB", { month: "short" }) + " " + y.slice(2); }
+  return "W" + key.split("-W")[1];
+}
+function bucketTitle(key, step) {
+  if (step === "day") return niceDay(key);
+  if (step === "month") { const [y, m] = key.split("-"); return new Date(+y, +m - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" }); }
+  return "Week " + key.split("-W")[1] + ", " + key.split("-W")[0];
+}
+let lastTrend = null;
+function renderTrends(D) {
+  const per = $("tPeriod").value, step = $("tStep").value;
+  let end = today(), start;
+  $("tCustom").hidden = per !== "custom"; $("tMsg").hidden = true;
+  const firstDay = [...db.sales.map(s => s.entry_date), ...Object.values(D.appt).map(st => st.date)].reduce((a, d) => d < a ? d : a, end);
+  if (per === "custom") { start = $("tFrom").value || firstDay; end = $("tTo").value || today(); if (start > end) { const x = start; start = end; end = x; } }
+  else if (per === "all") start = firstDay;
+  else if (per === "year") start = end.slice(0, 4) + "-01-01";
+  else if (per === "month") start = end.slice(0, 8) + "01";
+  else start = addDays(end, -(+per - 1));
+  const keys = [], seen = new Set();
+  for (let d = start; d <= end; d = addDays(d, 1)) { const k = bucketKey(d, step); if (!seen.has(k)) { seen.add(k); keys.push(k); } if (keys.length > 400) break; }
+  lastTrend = { start, end, step };
+  const sales = D.liveSales.filter(s => s.entry_date >= start && s.entry_date <= end);
+  const appts = Object.values(D.appt).filter(st => st.status !== "undone" && st.date >= start && st.date <= end);
+  const any = sales.length > 0 || appts.length > 0;
+  $("trendsEmpty").hidden = any; $("trendsBody").hidden = !any;
+  if (keys.length > 400) {
+    $("trendsBody").hidden = true; $("trendsEmpty").hidden = true;
+    $("tMsg").textContent = "That's too many " + step + "s to show. Choose “Show per: " + (step === "day" ? "Week" : "Month") + "” or a shorter period.";
+    $("tMsg").hidden = false; return;
+  }
+  if (!any) return;
+  const idx = {}; keys.forEach((k, i) => idx[k] = i);
+  const inc = keys.map(() => 0), cnt = keys.map(() => 0);
+  sales.forEach(s => { const i = idx[bucketKey(s.entry_date, step)]; if (i === undefined) return; inc[i] += cents(s.amount); cnt[i]++; });
+  const total = sales.reduce((a, s) => a + cents(s.amount), 0);
+  const labels = keys.map(k => bucketLabel(k, step)), titles = keys.map(k => bucketTitle(k, step));
+  drawChart($("chIncome"), { type: "bar", labels, titles, series: [{ name: "Income (GH₵)", color: "var(--money)", values: inc.map(fromCents) }], fmt: v => money(v), aria: "Income" });
+  drawChart($("chCount"), { type: "bar", labels, titles, series: [{ name: "Services", color: "var(--c-lashes)", values: cnt }], fmt: v => nf.format(v) + (v === 1 ? " service" : " services"), aria: "Services done" });
+  // tiles
+  const noShow = appts.filter(st => st.status === "no-show").length;
+  const tiles = [["Income", money(fromCents(total))], ["Services done", nf.format(sales.length)], ["Average per service", sales.length ? money(Math.round(total / sales.length) / 100) : "–"], ["No-shows", nf.format(noShow)]];
+  $("tTiles").replaceChildren(...tiles.map(([l, v]) => h("div", { class: "tile" }, h("div", { class: "tl" }, l), h("div", { class: "tv" }, v))));
+  const group = (f) => { const m = {}; sales.forEach(s => { const k = f(s); const g = m[k] || (m[k] = { n: 0, c: 0 }); g.n++; g.c += cents(s.amount); }); return m; };
+  const pct = c => total ? Math.round(c / total * 100) + "%" : "–";
+  const table = (el, head, m, label, color, limit) => {
+    let keys = Object.keys(m).sort((a, b) => m[b].c - m[a].c || m[b].n - m[a].n);
+    if (limit) keys = keys.slice(0, limit);
+    el.replaceChildren(keys.length ? h("table", { class: "t" },
+      h("tr", null, h("th", null, head), h("th", { class: "n" }, "Services"), h("th", { class: "n" }, "Income"), h("th", { class: "n" }, "Share")),
+      keys.map(k => h("tr", null,
+        h("td", null, color ? h("span", { class: "key", style: "background:" + color(k) }) : null, label(k), h("div", { class: "meter", "aria-hidden": "true" }, h("i", { style: "width:" + (total ? m[k].c / total * 100 : 0) + "%;background:" + (color ? color(k) : "var(--money)") }))),
+        h("td", { class: "n" }, nf.format(m[k].n)), h("td", { class: "n" }, money(fromCents(m[k].c))), h("td", { class: "n" }, pct(m[k].c)))),
+      limit ? null : h("tr", { class: "total" }, h("td", null, "Total"), h("td", { class: "n" }, nf.format(sales.length)), h("td", { class: "n" }, money(fromCents(total))), h("td", { class: "n" }, total ? "100%" : "–")))
+      : h("div", { class: "empty" }, "No services in this period."));
+  };
+  table($("tCats"), "Category", group(s => s.category), k => CATS[k] || k, k => "var(--c-" + (CATS[k] ? k : "other") + ")");
+  table($("tStaff"), "Person", group(s => s.staff_id), k => D.userName[k] || "?", null);
+  table($("tPay"), "Payment", group(s => s.payment), k => PAY[k] || k, null);
+  table($("tTop"), "Service", group(s => s.service_name), k => k, null, 10);
+  const ac = { booked: 0, done: 0, cancelled: 0, "no-show": 0 }; appts.forEach(st => ac[st.status]++);
+  const tot = appts.length;
+  $("tAppts").replaceChildren(tot ? h("table", { class: "t" },
+    h("tr", null, h("th", null, "Outcome"), h("th", { class: "n" }, "Appointments"), h("th", { class: "n" }, "Share")),
+    [["done", "Done"], ["booked", end >= today() ? "Still open" : "Not closed (no Done / no-show)"], ["no-show", "No-show"], ["cancelled", "Cancelled"]].map(([k, l]) => h("tr", null, h("td", null, l), h("td", { class: "n" }, nf.format(ac[k])), h("td", { class: "n" }, Math.round(ac[k] / tot * 100) + "%"))),
+    h("tr", { class: "total" }, h("td", null, "Total"), h("td", { class: "n" }, nf.format(tot)), h("td", { class: "n" }, "100%")))
+    : h("div", { class: "empty" }, "No appointments in this period."));
+}
+
+/* ---------- charts (SVG, no libraries) ---------- */
+const SVGNS = "http://www.w3.org/2000/svg";
+const chartOpts = {};
+function sv(tag, attrs, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.append(e); return e; }
+function niceTicks(min, max, count) {
+  if (min === max) max = min + 1;
+  const step0 = (max - min) / count, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = Math.max(1, [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0));
+  const lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step;
+  const t = []; for (let v = lo; v <= hi + step / 2; v += step) t.push(Math.round(v * 1e6) / 1e6); return t;
+}
+const shortNum = v => Math.abs(v) >= 10000 ? nf.format(Math.round(v / 1000)) + "k" : nf.format(v);
+function drawChart(wrap, o) {
+  if (wrap.id && !o.offscreen) chartOpts[wrap.id] = o;
+  wrap.innerHTML = "";
+  wrap.append(h("div", { class: "legend" + (o.type === "line" ? " lines" : "") }, o.series.map(s => h("span", null, h("i", { style: "background:" + s.color }), s.name))));
+  const W = Math.max(280, wrap.clientWidth || 320), H = o.height || 200, m = { l: 44, r: 10, t: 8, b: 24 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const all = o.series.flatMap(s => s.values);
+  let lo = Math.min(0, ...all), hi = Math.max(1, ...all);
+  const ticks = niceTicks(lo, hi, 4); lo = ticks[0]; hi = ticks[ticks.length - 1];
+  const y = v => m.t + ih - (v - lo) / (hi - lo) * ih;
+  const n = o.labels.length, band = iw / n, x = i => m.l + band * (i + .5);
+  const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria }, wrap);
+  const ax = sv("g", { class: "axis" }, svg);
+  ticks.forEach(t => { sv("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--muted)" : "var(--grid)" }, ax); sv("text", { x: m.l - 6, y: y(t) + 4, "text-anchor": "end" }, ax).textContent = shortNum(t); });
+  const every = Math.ceil(n / Math.max(1, Math.floor(iw / 46)));
+  o.labels.forEach((l, i) => { if (i % every) return; sv("text", { x: x(i), y: H - 7, "text-anchor": "middle" }, ax).textContent = l; });
+  const marks = [];
+  if (o.type === "bar") {
+    const ns = o.series.length, gap = 2, groupW = Math.min(band - 4, 22 * ns + gap * (ns - 1)), bw = Math.max(2, (groupW - gap * (ns - 1)) / ns), rr = Math.min(4, bw / 2);
+    o.series.forEach((s, si) => s.values.forEach((v, i) => {
+      if (!v) return;
+      const x0 = x(i) - groupW / 2 + si * (bw + gap), y0 = y(0), y1 = y(v), hgt = Math.abs(y1 - y0);
+      const d = hgt < rr ? `M${x0},${Math.min(y0, y1)}h${bw}v${Math.max(hgt, 1)}h${-bw}z`
+        : `M${x0},${y0}V${y1 + rr}Q${x0},${y1} ${x0 + rr},${y1}H${x0 + bw - rr}Q${x0 + bw},${y1} ${x0 + bw},${y1 + rr}V${y0}Z`;
+      (marks[i] = marks[i] || []).push(sv("path", { d, fill: s.color }, svg));
+    }));
+  } else {
+    o.series.forEach(s => {
+      sv("path", { d: s.values.map((v, i) => (i ? "L" : "M") + x(i) + "," + y(v)).join(""), fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+      if (n <= 40) s.values.forEach((v, i) => sv("circle", { cx: x(i), cy: y(v), r: 3.5, fill: s.color, stroke: "var(--card)", "stroke-width": 2 }, svg));
+    });
+  }
+  const cross = sv("line", { y1: m.t, y2: m.t + ih, stroke: "var(--muted)", "stroke-dasharray": "3 3", visibility: "hidden" }, svg);
+  const hit = sv("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent" }, svg);
+  const tip = h("div", { class: "tip", hidden: true }); wrap.append(tip);
+  const show = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * (W / r.width);
+    const i = Math.max(0, Math.min(n - 1, Math.floor((px - m.l) / band)));
+    tip.innerHTML = "";
+    tip.append(h("div", { class: "h" }, o.titles[i]), o.series.map(s => h("div", { class: "r" }, h("i", { style: "background:" + s.color }), h("strong", null, o.fmt(s.values[i])))));
+    tip.hidden = false;
+    marks.forEach((g, j) => g && g.forEach(p => p.setAttribute("opacity", j === i ? 1 : .5)));
+    if (o.type === "line") { cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible"); }
+    const sc = r.width / W, lgH = wrap.querySelector(".legend").offsetHeight + 4;
+    let left = x(i) * sc + 10; if (left + tip.offsetWidth > r.width) left = x(i) * sc - tip.offsetWidth - 10;
+    tip.style.left = Math.max(0, left) + "px"; tip.style.top = lgH + "px";
+  };
+  const hide = () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); marks.forEach(g => g && g.forEach(p => p.setAttribute("opacity", 1))); };
+  hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show);
+  hit.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") hide(); });
+  document.addEventListener("pointerdown", e => { if (!wrap.contains(e.target)) hide(); });
+}
+
+/* ---------- more ---------- */
+let evLimit = 100;
+function renderMore(D) {
+  const me = session.user;
+  $("meLine").textContent = "Logged in as " + me.name + (me.is_admin ? " (admin)" : "");
+  $("adminArea").hidden = !me.is_admin;
+  $("priceArea").hidden = !!me.is_admin;
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  $("installCard").hidden = $("installH").hidden = !!standalone;
+  if (me.is_admin) {
+    const ul = $("userList"); ul.innerHTML = "";
+    db.users.forEach(u => {
+      const self = u.id === me.id;
+      ul.append(h("div", { class: "entry noico person" },
+        h("div", { class: "main" }, h("div", { class: "ttl" }, u.name, u.is_admin ? h("span", { class: "tag tint" }, "admin") : null, !u.active ? h("span", { class: "tag warn" }, "deactivated") : null)),
+        h("div", { class: "row" },
+          h("button", { class: "btn small secondary needs-net", type: "button", onclick: () => resetPinSheet(u) }, "Reset PIN"),
+          self ? null : h("button", { class: "btn small secondary needs-net", type: "button", onclick: () => simpleAction("set_admin", { p_user_id: u.id, p_is_admin: !u.is_admin }, u.is_admin ? "Remove admin rights from " + u.name + "?" : "Make " + u.name + " an admin?") }, u.is_admin ? "Remove admin" : "Make admin"),
+          self ? null : h("button", { class: "btn small " + (u.active ? "danger" : "secondary") + " needs-net", type: "button", onclick: () => simpleAction("set_user_active", { p_user_id: u.id, p_active: !u.active }, (u.active ? "Deactivate " : "Activate ") + u.name + "?" + (u.active ? " They can no longer log in. Their entries stay in the log." : "")) }, u.active ? "Deactivate" : "Activate"))));
+    });
+    $("priceList").replaceChildren(priceTable(true));
+    const el = $("eventList"); el.innerHTML = "";
+    const evs = db.events.slice().reverse();
+    if (!evs.length) el.append(h("div", { class: "empty" }, "Nothing yet."));
+    evs.slice(0, evLimit).forEach(e => el.append(h("div", { class: "entry noico" }, h("div", { class: "main" }, h("div", { class: "ttl" }, cap(e.action)), h("div", { class: "sub" }, (e.details || "") + " · by " + (D.userName[e.user_id] || "Supabase") + " · " + stamp(e.logged_at))))));
+    $("evMore").hidden = evs.length <= evLimit;
+  } else {
+    $("priceView").replaceChildren(priceTable(false));
+  }
+  $("syncInfo").textContent = "Last updated " + (db.synced ? stamp(db.synced) : "never") + ". Updates every 30 seconds while open. Times are Kumasi time.";
+  setOnline(online);
+}
+function priceTable(editable) {
+  const box = h("div");
+  CAT_KEYS.forEach(c => {
+    const svcs = db.services.filter(s => s.category === c && (editable || s.active));
+    if (!svcs.length) return;
+    box.append(h("div", { class: "lbl", style: "margin-top:12px" }, h("span", { class: "key", style: "background:var(--c-" + c + ")" }), CATS[c]));
+    box.append(h("div", null, svcs.map(s => h("div", { class: "entry noico" + (editable ? " tap" : "") + (s.active ? "" : " dim"), onclick: editable ? () => serviceSheet(s) : null },
+      h("div", { class: "main" }, h("div", { class: "ttl", style: "font-weight:500" }, s.name, s.active ? null : h("span", { class: "tag" }, "hidden"))),
+      h("div", { class: "amt", style: "font-weight:500" + (s.price > 0 ? "" : ";color:var(--text3)") }, s.price > 0 ? money(s.price) : "no price")))));
+  });
+  return box;
+}
+function serviceSheet(s) {
+  const cat = h("select", { id: "pCat" }, CAT_KEYS.map(c => h("option", { value: c }, CATS[c])));
+  cat.value = s ? s.category : CAT_KEYS[0];
+  const nm = h("input", { id: "pName", autocomplete: "off", value: s ? s.name : "" });
+  const price = h("input", { id: "pPrice", inputmode: "decimal", autocomplete: "off", value: s && s.price > 0 ? String(s.price) : "", placeholder: "0 = no fixed price" });
+  let shown = s ? s.active : true;
+  const vis = seg({ yes: "Shown", no: "Hidden" }, shown ? "yes" : "no", v => shown = v === "yes");
+  sheet(s ? "Change service" : "Add service", [
+    field("Category", cat), field("Name", nm), field("Price (GH₵)", price, "Leave empty if the price differs every time."),
+    s ? h("div", { class: "blk" }, h("span", { class: "lbl" }, "In the service list"), vis, h("div", { class: "hint" }, "Hidden services stay in old entries but can't be picked for new ones.")) : null
+  ], s ? "Save" : "Add", async () => {
+    let p = 0; if (price.value.trim()) p = readMoney(price);
+    const r = await call("save_service", { p_id: s ? s.id : null, p_category: cat.value, p_name: nm.value, p_price: p, p_active: shown });
+    await sync(); toast(r.changed === false ? "Nothing changed" : "Price list saved");
+  });
+}
+
+const SIX = /^\d{6}$/;
+function pinInput(id) { return h("input", { id, type: "password", inputmode: "numeric", pattern: "[0-9]*", maxlength: 6, autocomplete: "off" }); }
+function changePinSheet() {
+  const o = pinInput("pOld"), n1 = pinInput("pNew"), n2 = pinInput("pNew2");
+  sheet("Change my PIN", [field("Current PIN", o), field("New PIN (6 digits)", n1), field("New PIN again", n2)], "Save PIN", async () => {
+    if (!SIX.test(n1.value)) throw new Error("The new PIN must be exactly 6 digits");
+    if (n1.value !== n2.value) throw new Error("The new PINs don't match");
+    await call("change_pin", { p_old: o.value, p_new: n1.value });
+    await sync(); toast("PIN changed");
+  });
+}
+function resetPinSheet(u) {
+  const n1 = pinInput("rNew");
+  sheet("New PIN for " + u.name, [field("New PIN (6 digits)", n1, "Tell " + u.name + " the new PIN. They can change it under More.")], "Set PIN", async () => {
+    if (!SIX.test(n1.value)) throw new Error("The PIN must be exactly 6 digits");
+    await call("reset_pin", { p_user_id: u.id, p_pin: n1.value });
+    await sync(); toast("PIN for " + u.name + " changed");
+  });
+}
+function addUserSheet() {
+  const nm = h("input", { id: "aName", autocomplete: "off" });
+  const pin = pinInput("aPin");
+  const adm = h("input", { id: "aAdmin", type: "checkbox" });
+  sheet("Add person", [field("Name", nm), field("PIN (6 digits)", pin), h("label", { style: "display:flex;gap:8px;align-items:center;margin:0 4px 12px" }, adm, "Admin (people, prices, activity log)")], "Add", async () => {
+    if (!SIX.test(pin.value)) throw new Error("The PIN must be exactly 6 digits");
+    await call("add_user", { p_name: nm.value, p_pin: pin.value, p_is_admin: adm.checked });
+    await sync(); toast(nm.value.trim() + " added");
+  });
+}
+async function simpleAction(fn, args, question) {
+  if (!confirm(question)) return;
+  try { await call(fn, args); await sync(); toast("Done"); } catch (e) { toast(e.message, 4000); }
+}
+
+/* ================= sheets (bottom sheets you can drag down) ================= */
+function sheet(title, body, okLabel, onOk, opts) {
+  opts = opts || {};
+  const err = h("p", { class: "err", hidden: true, role: "alert" });
+  const scrim = h("div", { class: "scrim" });
+  const head = h("div", { class: "grab", "aria-hidden": "true" });
+  const ok = okLabel ? h("button", { class: "btn" + (opts.danger ? " solid-danger" : ""), type: "button" }, okLabel) : null;
+  const el = h("div", { class: "sheet", role: "dialog", "aria-modal": "true", "aria-label": title },
+    head, h("h2", null, title), body, err,
+    h("div", { class: "foot" }, h("button", { class: "btn secondary", type: "button", onclick: () => close() }, okLabel ? "Cancel" : "Close"), ok));
+  let closed = false;
+  function close() {
+    if (closed) return; closed = true;
+    el.style.transition = ""; el.style.transform = "";
+    el.classList.remove("on"); scrim.classList.remove("on");
+    setTimeout(() => { el.remove(); scrim.remove(); }, REDUCED ? 220 : 470);
+    document.removeEventListener("keydown", esc);
+  }
+  const esc = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", esc);
+  scrim.onclick = () => close();
+  if (ok) ok.onclick = async () => {
+    err.hidden = true; ok.disabled = true;
+    try { await onOk(); haptic(); close(); } catch (e) { err.textContent = e.message; err.hidden = false; err.scrollIntoView({ block: "nearest", behavior: REDUCED ? "auto" : "smooth" }); }
+    finally { ok.disabled = false; }
+  };
+  // drag the handle down to close: follows the finger 1:1, decides by projected momentum
+  let y0 = null, hist = [];
+  head.addEventListener("pointerdown", e => {
+    if (REDUCED) return;
+    head.setPointerCapture(e.pointerId); y0 = e.clientY; hist = [{ y: e.clientY, t: e.timeStamp }];
+    el.style.transition = "none";
+  });
+  head.addEventListener("pointermove", e => {
+    if (y0 === null) return;
+    let dy = e.clientY - y0;
+    if (dy < 0) dy = -(Math.abs(dy) * 60) / (60 + Math.abs(dy)); // resist upwards (rubber band)
+    el.style.transform = "translateY(" + dy + "px)";
+    hist.push({ y: e.clientY, t: e.timeStamp }); if (hist.length > 6) hist.shift();
+  });
+  const release = e => {
+    if (y0 === null) return;
+    const dy = e.clientY - y0, a = hist[0], b = hist[hist.length - 1];
+    const v = b && a && b.t > a.t ? (b.y - a.y) / ((b.t - a.t) / 1000) : 0; // px/s
+    const projected = dy + (v / 1000) * 0.998 / (1 - 0.998);
+    y0 = null;
+    el.style.transition = "transform 420ms cubic-bezier(.32,.72,0,1)";
+    if (projected > el.offsetHeight * 0.5) { close(); }
+    else { el.style.transform = ""; setTimeout(() => { if (!closed) el.style.transition = ""; }, 430); }
+  };
+  head.addEventListener("pointerup", release); head.addEventListener("pointercancel", release);
+
+  document.body.append(scrim, el);
+  requestAnimationFrame(() => requestAnimationFrame(() => { scrim.classList.add("on"); el.classList.add("on"); }));
+  const firstInput = el.querySelector("input, select");
+  if (firstInput && opts.focus !== false && window.matchMedia("(pointer: fine)").matches) setTimeout(() => firstInput.focus(), 300);
+  return { el, err, close };
+}
+function seg(options, value, onChange) {
+  const el = h("div", { class: "seg", role: "group" });
+  const set = v => { value = v; [...el.children].forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v))); onChange && onChange(v); };
+  Object.keys(options).forEach(k => el.append(h("button", { type: "button", "data-v": k, onclick: () => set(k) }, options[k])));
+  set(value); el.get = () => value; return el;
+}
+function field(label, input, hint) { return h("div", { class: "field" }, h("label", { for: input.id }, label), input, hint ? h("div", { class: "hint" }, hint) : null); }
+
+/* ================= PDF of the trends page (no libraries) ================= */
+// Charts are drawn in light colours for printing, whatever the phone's theme.
+const PRINT_COLORS = { money: "#7b45c9", "c-lashes": "#d13d88", grid: "#e6e1ec", muted: "#8e8a96", text2: "#6c6875", card: "#ffffff", text: "#000000" };
+function svgToJpeg(svg) {
+  return new Promise((resolve, reject) => {
+    const clone = svg.cloneNode(true);
+    const vb = svg.viewBox.baseVal, scale = 3;
+    clone.setAttribute("width", vb.width * scale); clone.setAttribute("height", vb.height * scale);
+    clone.setAttribute("font-family", "Helvetica, Arial, sans-serif");
+    clone.querySelectorAll(".axis text").forEach(t => { t.setAttribute("fill", "var(--text2)"); t.setAttribute("font-size", "14"); });
+    clone.querySelectorAll("[opacity]").forEach(e => e.setAttribute("opacity", "1"));
+    clone.querySelectorAll("[visibility=visible]").forEach(e => e.setAttribute("visibility", "hidden"));
+    let str = new XMLSerializer().serializeToString(clone).replace(/var\(--([a-z0-9-]+)\)/g, (m, k) => PRINT_COLORS[k] || "#000000");
+    if (!/xmlns=/.test(str)) str = str.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas"); c.width = vb.width * scale; c.height = vb.height * scale;
+      const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      const b64 = c.toDataURL("image/jpeg", 0.92).split(",")[1], bin = atob(b64), bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      resolve({ bytes, w: c.width, h: c.height, ratio: vb.height / vb.width });
+    };
+    img.onerror = () => reject(new Error("Could not draw the chart"));
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(str);
+  });
+}
+// Text for the built-in PDF font (Latin-1 only). GH₵ is written as GHS.
+const pdfText = s => String(s).replace(/GH₵/g, "GHS").replace(/[–—]/g, "-").replace(/[→]/g, "->").replace(/[−]/g, "-").replace(/[^\x20-\x7e\xa0-\xff]/g, "").replace(/([()\\])/g, "\\$1");
+function hexRGB(hex) { const n = parseInt(hex.slice(1), 16); return [(n >> 16) / 255, (n >> 8 & 255) / 255, (n & 255) / 255].map(v => v.toFixed(3)).join(" "); }
+function buildPdf(pages, images) {
+  const enc = s => { const a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i) & 255; return a; };
+  const chunks = [], offsets = []; let len = 0;
+  const push = x => { const b = typeof x === "string" ? enc(x) : x; chunks.push(b); len += b.length; };
+  const obj = (n, body) => { offsets[n] = len; push(n + " 0 obj\n"); body.forEach(push); push("\nendobj\n"); };
+  const nImg = images.length, firstImg = 4, firstPage = firstImg + nImg;
+  push("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n");
+  obj(1, ["<< /Type /Catalog /Pages 2 0 R >>"]);
+  const kids = pages.map((_, i) => (firstPage + i * 2) + " 0 R").join(" ");
+  obj(2, ["<< /Type /Pages /Kids [" + kids + "] /Count " + pages.length + " >>"]);
+  obj(3, ["<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"]);
+  images.forEach((im, i) => obj(firstImg + i, ["<< /Type /XObject /Subtype /Image /Width " + im.w + " /Height " + im.h + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + im.bytes.length + " >>\nstream\n", im.bytes, "\nendstream"]));
+  const xo = images.map((_, i) => "/Im" + i + " " + (firstImg + i) + " 0 R").join(" ");
+  pages.forEach((content, i) => {
+    const pn = firstPage + i * 2, cn = pn + 1, body = enc(content);
+    obj(pn, ["<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> /XObject << " + xo + " >> >> /Contents " + cn + " 0 R >>"]);
+    obj(cn, ["<< /Length " + body.length + " >>\nstream\n", body, "\nendstream"]);
+  });
+  const total = firstPage + pages.length * 2, xref = len;
+  let x = "xref\n0 " + total + "\n0000000000 65535 f \n";
+  for (let i = 1; i < total; i++) x += String(offsets[i]).padStart(10, "0") + " 00000 n \n";
+  push(x + "trailer\n<< /Size " + total + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n");
+  return new Blob(chunks, { type: "application/pdf" });
+}
+async function downloadTrendsPdf() {
+  if (!lastTrend || $("trendsBody").hidden) { toast("Nothing to put in the PDF for this period"); return; }
+  const btn = $("pdfBtn"); btn.disabled = true; btn.textContent = "Making PDF…";
+  try {
+    const stepName = lastTrend.step;
+    const charts = [["Income (GHS per " + stepName + ")", "chIncome", PRINT_COLORS.money], ["Services done (per " + stepName + ")", "chCount", PRINT_COLORS["c-lashes"]]];
+    const images = [];
+    const tmp = h("div", { style: "position:absolute;left:-10000px;top:0;width:760px" }); document.body.append(tmp);
+    try {
+      for (const [, id] of charts) {
+        const box = h("div", { class: "chart-wrap" }); tmp.append(box);
+        drawChart(box, Object.assign({}, chartOpts[id], { offscreen: true, height: 240 }));
+        images.push(await svgToJpeg(box.querySelector("svg")));
+      }
+    } finally { tmp.remove(); }
+    const M = 40, W = 595 - 2 * M; const pages = []; let c = "", y = 842 - M;
+    const text = (str, x, yy, size, color) => { c += "BT " + hexRGB(color || "#000000") + " rg /F1 " + size + " Tf " + x.toFixed(1) + " " + yy.toFixed(1) + " Td (" + pdfText(str) + ") Tj ET\n"; };
+    const rect = (x, yy, w, hh, color) => { c += hexRGB(color) + " rg " + [x, yy, w, hh].map(v => v.toFixed(1)).join(" ") + " re f\n"; };
+    const newPage = () => { pages.push(c); c = ""; y = 842 - M; };
+    const need = hh => { if (y - hh < M) newPage(); };
+    rect(M, y - 4, 4, 4, "#ffffff");
+    text("BrowTech Kumasi - Trends", M, y - 20, 22); y -= 30;
+    text(niceDay(lastTrend.start) + " to " + niceDay(lastTrend.end) + "  |  per " + stepName, M, y - 12, 11, "#6c6875"); y -= 16;
+    text("Made " + stamp(new Date().toISOString()) + " (Kumasi time) by " + session.user.name + "  |  Amounts in Ghana cedis (GHS). Undone entries left out.", M, y - 12, 9.5, "#6c6875"); y -= 28;
+    // tiles
+    const tiles = [...$("tTiles").children].map(t => [t.children[0].textContent, t.children[1].textContent]);
+    const tw = W / tiles.length;
+    tiles.forEach(([l, v], i) => { text(l, M + i * tw, y - 10, 9.5, "#6c6875"); text(v, M + i * tw, y - 28, 15); });
+    y -= 46;
+    charts.forEach(([title, , color], i) => {
+      const im = images[i], hh = W * im.ratio;
+      need(hh + 36);
+      text(title, M, y - 14, 14); y -= 20;
+      c += "q " + W.toFixed(1) + " 0 0 " + hh.toFixed(1) + " " + M + " " + (y - hh).toFixed(1) + " cm /Im" + i + " Do Q\n";
+      y -= hh + 18;
+    });
+    const table = (title, el) => {
+      const rows = [...el.querySelectorAll("tr")].map(tr => [...tr.children].map(td => td.textContent.trim()));
+      need(28 + Math.min(rows.length, 6) * 16); text(title, M, y - 14, 14); y -= 26;
+      if (!rows.length) { text("None in this period", M, y - 10, 10, "#6c6875"); y -= 22; return; }
+      const cols = rows[0].length, first = W * 0.4, colW = (W - first) / (cols - 1);
+      rows.forEach((r, ri) => {
+        need(16);
+        r.forEach((cell, ci) => { const s = pdfText(cell).replace(/\\/g, ""); const x = ci === 0 ? M : M + first + colW * ci - 6 - s.length * 5.1; text(ci === 0 && s.length > 42 ? cell.slice(0, 40) + "..." : cell, x, y - 10, 10, ri === 0 ? "#6c6875" : "#000000"); });
+        c += "0.88 0.86 0.9 RG 0.5 w " + M + " " + (y - 14).toFixed(1) + " m " + (M + W) + " " + (y - 14).toFixed(1) + " l S\n";
+        y -= 16;
+      });
+      y -= 16;
+    };
+    table("By category", $("tCats"));
+    table("By staff", $("tStaff"));
+    table("Payment", $("tPay"));
+    table("Top services", $("tTop"));
+    table("Appointments", $("tAppts"));
+    pages.push(c);
+    const blob = buildPdf(pages, images);
+    const a = h("a", { href: URL.createObjectURL(blob), download: "browtech_trends_" + lastTrend.start + "_to_" + lastTrend.end + ".pdf" });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast("PDF downloaded");
+  } catch (e) { toast(e.message || "Could not make the PDF", 4500); }
+  finally { btn.disabled = false; btn.textContent = "Download PDF"; }
+}
+
+/* ================= login ================= */
+let loginUser = null, pinVal = "";
+async function showLogin(msg) {
+  $("app").hidden = true; $("login").hidden = false; $("loginPin").hidden = true; $("loginUsers").hidden = false;
+  $("loginSub").textContent = "Who's using the app?";
+  const box = $("userBtns"); box.innerHTML = "";
+  $("usersErr").hidden = !msg; $("usersErr").textContent = msg || "";
+  try {
+    const users = await rpc("list_users", {});
+    if (!users.length) { $("usersErr").textContent = "No people set up yet – run setup.sql in Supabase first."; $("usersErr").hidden = false; }
+    users.forEach(u => box.append(h("button", { class: "choice", type: "button", onclick: () => pickUser(u) }, u.name)));
+  } catch (e) { $("usersErr").textContent = e.message; $("usersErr").hidden = false; box.append(h("button", { class: "choice", type: "button", onclick: () => showLogin() }, "Try again")); }
+}
+function pickUser(u) {
+  loginUser = u; pinVal = ""; drawPin(); $("pinErr").hidden = true;
+  $("loginSub").textContent = "Enter PIN for " + u.name;
+  $("loginUsers").hidden = true; $("loginPin").hidden = false;
+}
+function drawPin() {
+  const d = $("pinDots"); d.innerHTML = "";
+  for (let i = 0; i < 6; i++) d.append(h("i", { class: i < pinVal.length ? "on" : "" }));
+  $("pin").value = pinVal;
+  $("pinGo").disabled = pinVal.length < 6;
+}
+function pinKey(k) {
+  if ($("loginPin").hidden) return;
+  if (k === "del") pinVal = pinVal.slice(0, -1);
+  else if (/^\d$/.test(k) && pinVal.length < 6) pinVal += k;
+  $("pinErr").hidden = true; drawPin();
+  if (pinVal.length === 6) setTimeout(doLogin, 120);
+}
+(function buildKeypad() {
+  const kp = $("keypad");
+  ["1","2","3","4","5","6","7","8","9","","0","del"].forEach(k => {
+    if (!k) { kp.append(h("span")); return; }
+    kp.append(h("button", { type: "button", class: k === "del" ? "plain" : "", "aria-label": k === "del" ? "Delete" : k, "data-k": k,
+      onpointerdown: e => { e.preventDefault(); pinKey(k); }, onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pinKey(k); } } }, k === "del" ? "⌫" : k));
+  });
+})();
+document.addEventListener("keydown", e => {
+  if ($("login").hidden || $("loginPin").hidden) return;
+  if (/^\d$/.test(e.key)) pinKey(e.key);
+  else if (e.key === "Backspace") pinKey("del");
+  else if (e.key === "Enter" && pinVal.length === 6) doLogin();
+});
+$("pin").addEventListener("input", () => { pinVal = $("pin").value.replace(/\D/g, "").slice(0, 6); drawPin(); });
+let loggingIn = false;
+async function doLogin() {
+  if (loggingIn) return; loggingIn = true;
+  const btn = $("pinGo"); btn.disabled = true; $("pinErr").hidden = true;
+  try {
+    const r = await rpc("login", { p_user_id: loginUser.id, p_pin: pinVal });
+    if (!r.ok) throw new Error(r.error);
+    session = { token: r.token, user: r.user, loginAt: Date.now() }; save(LS_SESSION, session);
+    if (db.me && db.me.id !== r.user.id) db = emptyDb(); // someone else used this phone before: start clean
+    haptic(); startApp();
+  } catch (e) {
+    $("pinErr").textContent = e.message; $("pinErr").hidden = false;
+    const d = $("pinDots"); d.classList.remove("shake"); void d.offsetWidth; d.classList.add("shake");
+    try { navigator.vibrate && navigator.vibrate([30, 40, 30]); } catch (x) {}
+    pinVal = ""; drawPin();
+  } finally { loggingIn = false; }
+}
+function endSession(msg) {
+  session = null; localStorage.removeItem(LS_SESSION);
+  clearInterval(pollTimer);
+  document.querySelectorAll(".sheet, .scrim").forEach(w => w.remove());
+  showLogin(msg);
+}
+
+/* ================= start ================= */
+function showTab(name) {
+  currentTab = name;
+  document.querySelectorAll(".tabbar button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  document.querySelectorAll(".tab").forEach(s => s.hidden = s.id !== "tab-" + name);
+  window.scrollTo(0, 0);
+  render();
+}
+let pollTimer;
+const SESSION_DAYS = 14;
+function checkSessionAge() {
+  if (!session) return false;
+  if (!session.loginAt) { session.loginAt = Date.now(); save(LS_SESSION, session); }
+  if (Date.now() - session.loginAt <= SESSION_DAYS * 864e5) return false;
+  const t = session.token; rpc("logout", { p_token: t }).catch(() => {});
+  endSession("For safety, please enter your PIN again (every 2 weeks).");
+  return true;
+}
+let lastDay = null;
+function startApp() {
+  if (checkSessionAge()) return;
+  $("login").hidden = true; $("app").hidden = false;
+  apptDay = today(); lastDay = today();
+  render(); sync();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(() => {
+    if (lastDay !== today()) { lastDay = today(); apptDay = today(); shownMoney = undefined; }
+    if (document.visibilityState === "visible") sync(); else updateAgo();
+  }, 30000);
+}
+
+document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+$("btnSale").onclick = () => saleFormSheet();
+$("btnBook").onclick = bookSheet;
+$("cardIncome").onclick = todaySheet;
+$("cardAppts").onclick = () => { apptDay = today(); render(); $("apptHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); };
+$("seeAll").onclick = () => showTab("history");
+["fText", "fType", "fCat", "fStaff", "fUser", "fPay", "fFrom", "fTo"].forEach(id => $(id).addEventListener("input", () => { histLimit = 80; render(); }));
+$("fClear").onclick = () => { ["fText", "fType", "fCat", "fStaff", "fUser", "fPay", "fFrom", "fTo"].forEach(id => $(id).value = ""); render(); };
+$("histMore").onclick = () => { histLimit += 200; render(); };
+$("evMore").onclick = () => { evLimit += 300; render(); };
+$("exportBtn").onclick = exportCSV;
+$("tPeriod").onchange = () => {
+  if ($("tPeriod").value === "custom" && !$("tFrom").value) { $("tFrom").value = addDays(today(), -27); $("tTo").value = today(); }
+  render();
+};
+$("tStep").onchange = render;
+$("pdfBtn").onclick = downloadTrendsPdf;
+["tFrom", "tTo"].forEach(id => $(id).addEventListener("change", render));
+$("changePinBtn").onclick = changePinSheet;
+$("logoutBtn").onclick = async () => { if (!confirm("Log out?")) return; try { await rpc("logout", { p_token: session.token }); } catch (e) {} endSession(); };
+$("addUserBtn").onclick = addUserSheet;
+$("addSvcBtn").onclick = () => serviceSheet(null);
+$("reloadAll").onclick = async () => { await sync(true); toast("All data reloaded"); };
+$("pinGo").onclick = doLogin;
+$("pinBack").onclick = () => showLogin();
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && session) sync(); });
+window.addEventListener("online", () => session && sync());
+let rT; window.addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(() => { if (currentTab === "trends") render(); }, 150); });
+
+if (!CFG.url || !CFG.key) { $("setup").hidden = false; }
+else if (session) startApp();
+else showLogin();
+
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>

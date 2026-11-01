@@ -1,0 +1,45 @@
+# Keeps the free Supabase database from pausing (it pauses after 1 week without use).
+# Every 3 days GitHub asks the database for the list of names – harmless, reads nothing private.
+# On the 1st of each month it also saves a tiny date file to this repo, so GitHub never
+# switches this job off (GitHub stops scheduled jobs after 60 days without repo changes).
+name: Keep database awake
+
+on:
+  schedule:
+    - cron: "23 6 */3 * *"   # 06:23 UTC on the 1st, 4th, 7th ... of each month
+  workflow_dispatch:
+    inputs:
+      save_date_file:
+        description: "Also save the monthly date file now"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ping Supabase
+        run: |
+          URL=$(grep -oE 'https://[a-z0-9]+\.supabase\.co' config.js | head -1)
+          KEY=$(grep -oE 'key: *"[^"]+"' config.js | head -1 | sed -E 's/key: *"([^"]+)"/\1/')
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then echo "config.js is not filled in yet"; exit 1; fi
+          AUTH=()
+          case "$KEY" in eyJ*) AUTH=(-H "Authorization: Bearer $KEY");; esac
+          CODE=$(curl -s -o /tmp/out.txt -w '%{http_code}' -X POST "$URL/rest/v1/rpc/list_users" \
+                 -H "apikey: $KEY" "${AUTH[@]}" -H "Content-Type: application/json" -d '{}')
+          echo "Supabase answered: HTTP $CODE"
+          test "$CODE" = "200"
+      - name: Monthly date file (keeps this job switched on)
+        if: ${{ inputs.save_date_file || github.event_name == 'schedule' }}
+        run: |
+          if [ "${{ inputs.save_date_file }}" != "true" ] && [ "$(date -u +%d)" != "01" ]; then echo "Not the 1st – nothing to save"; exit 0; fi
+          date -u +"Last automatic check: %Y-%m-%d %H:%M UTC" > .github/keepalive.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive.txt
+          git commit -m "Monthly keep-alive [skip ci]" || exit 0
+          git push
