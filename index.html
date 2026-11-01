@@ -85,6 +85,19 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 
 /* ---------- big actions ---------- */
 .ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.wk-next { position: sticky; bottom: calc(62px + env(safe-area-inset-bottom)); z-index: 5; width: 100%; margin-top: 12px; box-shadow: var(--shadow); }
+.wk-next[hidden] { display: none; }
+.mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--fill); border-radius: 12px; padding: 3px; margin: 12px 0 14px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
+.mode .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform 260ms cubic-bezier(.3,1.25,.5,1); }
+@media (prefers-color-scheme: dark) { .mode .thumb { background: #4a4652; } }
+@media (prefers-reduced-motion: reduce) { .mode .thumb { transition: none; } }
+.mode[data-mode="appt"] .thumb { transform: translateX(100%); }
+.mode.drag { cursor: grabbing; }
+.mode.drag .thumb { transition: none; }
+.mode button { position: relative; min-height: 44px; border: 0; background: none; font-size: 15px; font-weight: 500; color: var(--text2); cursor: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; letter-spacing: 0; }
+.mode button[aria-checked="true"] { font-weight: 600; color: var(--text); }
+.mode-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--tint); color: var(--tint-ink); font-size: 12px; font-weight: 700; display: inline-grid; place-items: center; }
+.mode-n[hidden] { display: none; }
 .op { border: 0; border-radius: 16px; padding: 15px 8px; font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
 .op svg { width: 20px; height: 20px; flex: none; }
 .op.main { background: var(--tint); color: var(--tint-ink); }
@@ -448,6 +461,23 @@ details.f[open] > summary { margin-bottom: 12px; }
     <h1 class="large">Today</h1>
     <div class="status"><span class="dot" id="syncDot"></span><span id="whoName"></span><span id="syncAgo"></span></div>
     <div class="banner" id="offlineBanner" hidden></div>
+    <div class="mode" id="modeSwitch" role="radiogroup" aria-label="Walk-in or appointments" data-mode="walkin">
+      <span class="thumb" id="modeThumb"></span>
+      <button type="button" role="radio" data-mode="walkin" aria-checked="true">Walk-in</button>
+      <button type="button" role="radio" data-mode="appt" aria-checked="false" tabindex="-1">Appointments<span class="mode-n" id="modeCount" hidden></span></button>
+    </div>
+
+    <!-- walk-in: tap the services, then save -->
+    <div id="modeWalkin">
+      <div class="pills" id="wkCats" role="group" aria-label="Category"></div>
+      <div class="group" id="wkServices" role="group" aria-label="Services – you can choose several"></div>
+      <button class="op main press needs-net wk-next" id="wkNext" type="button" hidden></button>
+      <div class="section-h"><span id="wkTitle">Walk-ins today</span></div>
+      <div class="group" id="wkRecent"></div>
+    </div>
+
+    <!-- appointments -->
+    <div id="modeAppt" hidden>
     <div class="cards">
       <button class="scard income press" id="cardIncome" type="button">
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
@@ -475,6 +505,7 @@ details.f[open] > summary { margin-bottom: 12px; }
 
     <div class="section-h"><span id="recentTitle">Recent services</span><button type="button" id="seeAll">See all</button></div>
     <div class="group" id="recent"></div>
+    </div>
   </section>
 
   <!-- HISTORY -->
@@ -792,6 +823,7 @@ function render() {
   $("whoName").textContent = session.user.name;
   updateAgo();
   renderToday(D);
+  renderWalkin(D);
   if (currentTab === "history") renderHistory(D);
   if (currentTab === "trends") renderTrends(D);
   if (currentTab === "more") renderMore(D);
@@ -899,6 +931,8 @@ function renderToday(D) {
   // requests from the booking page
   $("reqArea").hidden = !requests.length;
   $("reqTitle").textContent = "New requests · " + requests.length;
+  $("modeCount").hidden = !requests.length;
+  $("modeCount").textContent = requests.length;
   $("reqList").replaceChildren(...requests.map(st => requestRow(st, D)));
   renderDays(D);
   renderApptList(D);
@@ -1070,7 +1104,7 @@ function saleFormSheet(opts) {
     payBlk.hidden = lines.length > 0 && ok && tot === 0;
     if (!lines.length) renderAdd();
   }
-  (a ? apptServices(a) : []).forEach(x => addLine(x.id ? (svcFromList(x.id) || x) : x));
+  (a ? apptServices(a) : opts.services || []).forEach(x => addLine(x.id ? (svcFromList(x.id) || x) : x));
   renderAdd(); upd();
   const date = h("input", { id: "sDate", type: "date", value: today(), max: today() });
   const cust = h("input", { id: "sCust", autocomplete: "off", placeholder: "Optional", value: a ? a.customer : "" });
@@ -1100,6 +1134,7 @@ function saleFormSheet(opts) {
     if (!date.value) throw new Error("Choose the date");
     const r = await call("add_sales", { p_items: items, p_payment: pay, p_date: date.value, p_customer: cust.value, p_phone: phone.value, p_note: note.value, p_appointment_id: a ? a.id : null });
     await sync();
+    if (opts.onSaved) opts.onSaved();
     toast("Saved · " + money(fromCents(tot)) + (items.length > 1 ? " · " + items.length + " services" : ""), 6000, "Undo", () => quickUndoMany("sale", r.ids));
   }, { focus: false });
   return s;
@@ -1109,6 +1144,88 @@ async function quickUndoMany(target, ids) {
     for (const id of ids) await call("undo_entry", { p_target: target, p_id: id, p_reason: "Undone right after entering" });
     haptic(); await sync(); toast("Undone");
   } catch (e) { await sync(); toast(e.message, 4500); }
+}
+
+/* ---------- walk-in / appointments switch: tap, drag the thumb, or arrow keys ---------- */
+function setMode(m) {
+  $("modeSwitch").dataset.mode = m;
+  $("modeSwitch").querySelectorAll("button").forEach(b => { const on = b.dataset.mode === m; b.setAttribute("aria-checked", String(on)); b.tabIndex = on ? 0 : -1; });
+  $("modeWalkin").hidden = m !== "walkin";
+  $("modeAppt").hidden = m !== "appt";
+}
+function initModeSwitch() {
+  const sw = $("modeSwitch"), thumb = $("modeThumb");
+  let drag = null, justDragged = false;
+  sw.addEventListener("pointerdown", e => {
+    drag = { x: e.clientX, id: e.pointerId, from: sw.dataset.mode === "appt" ? thumb.offsetWidth : 0, on: false, pos: 0 };
+  });
+  sw.addEventListener("pointermove", e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.on) {
+      if (Math.abs(dx) < 6) return;
+      drag.on = true; sw.classList.add("drag"); sw.setPointerCapture(e.pointerId);
+    }
+    drag.pos = Math.max(0, Math.min(thumb.offsetWidth, drag.from + dx));
+    thumb.style.transform = "translateX(" + drag.pos + "px)";
+  });
+  const end = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    if (!d.on) return;
+    sw.classList.remove("drag"); thumb.style.transform = "";
+    justDragged = true; setTimeout(() => { justDragged = false; }, 0);
+    if (e.type === "pointercancel") return;
+    const m = d.pos > thumb.offsetWidth / 2 ? "appt" : "walkin";
+    if (m !== sw.dataset.mode) { setMode(m); haptic(); }
+  };
+  sw.addEventListener("pointerup", end);
+  sw.addEventListener("pointercancel", end);
+  sw.addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (b && !justDragged) setMode(b.dataset.mode);
+  });
+  sw.addEventListener("keydown", e => {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+    e.preventDefault();
+    setMode(e.key === "ArrowLeft" || e.key === "ArrowUp" ? "walkin" : "appt");
+    sw.querySelector('[aria-checked="true"]').focus();
+  });
+}
+
+/* ---------- walk-in: tap the services, then the "service done" sheet ---------- */
+const wk = { cat: null, ids: [], other: false };
+function renderWalkin(D) {
+  const svcs = db.services.filter(s => s.active);
+  wk.ids = wk.ids.filter(id => svcs.some(s => s.id === id));
+  const cats = CAT_KEYS.filter(c => svcs.some(s => s.category === c));
+  if (!cats.includes(wk.cat)) wk.cat = cats[0] || null;
+  const strip = $("wkCats"), keep = strip.scrollLeft;
+  strip.replaceChildren(...cats.map(c => h("button", { class: "pill press", type: "button", "aria-pressed": String(c === wk.cat), onclick: () => { wk.cat = c; render(); } },
+    h("i", { style: "background:var(--c-" + c + ")" }), CATS[c])));
+  strip.scrollLeft = keep;
+  const row = (on, onclick, nm, price) => h("button", { class: "svc", type: "button", role: "checkbox", "aria-checked": String(on), onclick },
+    h("span", { class: "radio check", "aria-hidden": "true" }),
+    h("span", null, h("div", { class: "nm" }, nm)),
+    price > 0 ? h("span", { class: "pr" }, money(price)) : null);
+  $("wkServices").replaceChildren(...svcs.filter(s => s.category === wk.cat).map(s => row(wk.ids.includes(s.id), () => {
+      wk.ids = wk.ids.includes(s.id) ? wk.ids.filter(id => id !== s.id) : wk.ids.concat(s.id);
+      render();
+    }, s.name, s.price)),
+    row(wk.other, () => { wk.other = !wk.other; render(); }, "Other service (type it)", 0));
+  const n = wk.ids.length + (wk.other ? 1 : 0);
+  const tot = wk.ids.reduce((a, id) => a + cents(svcFromList(id).price || 0), 0);
+  $("wkNext").hidden = !n;
+  $("wkNext").textContent = "Next · " + n + (n === 1 ? " service" : " services") + (tot ? " · " + money(fromCents(tot)) : "");
+  const t = today();
+  const list = db.sales.filter(s => s.entry_date === t && !s.appointment_id && (isAdmin() || s.user_id === session.user.id)).reverse();
+  $("wkTitle").textContent = isAdmin() ? "Walk-ins today" : "My walk-ins today";
+  $("wkRecent").replaceChildren(...(list.length ? list.map(s => saleEl(s, D, { undo: true })) : [h("div", { class: "empty" }, "None yet")]));
+}
+function walkinNext() {
+  const services = wk.ids.map(svcFromList);
+  if (wk.other) services.push({ id: null, category: "", name: "", price: 0, duration_min: 60 });
+  saleFormSheet({ services, onSaved: () => { wk.ids = []; wk.other = false; render(); } });
 }
 
 /* ---------- booking sheet (several services) ---------- */
@@ -2160,6 +2277,8 @@ function startApp() {
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 $("btnSale").onclick = () => saleFormSheet();
 $("btnBook").onclick = bookSheet;
+$("wkNext").onclick = walkinNext;
+initModeSwitch();
 $("cardIncome").onclick = () => { if (isAdmin()) todaySheet(); else if (!$("reqArea").hidden) $("reqHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); else toast("No requests waiting"); };
 $("cardAppts").onclick = () => { apptDay = today(); render(); $("apptHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); };
 $("seeAll").onclick = () => showTab("history");
