@@ -90,10 +90,12 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 #wkExtra { margin: 12px 0 0; }
 #wkExtra:empty { display: none; }
 #wkDiscRow { margin: 12px 0; }
-.order-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+.order-list { position: relative; }
+.order-row { position: relative; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 10px; border-radius: 10px; background: var(--bg); cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .order-row .ln { flex: 1; min-width: 0; }
+.order-row .grip { flex: none; color: var(--text3); font-size: 20px; line-height: 1; }
 .order-row.dim .ln { color: var(--text3); }
-.order-btn { min-width: 44px; min-height: 40px; flex: none; }
+.order-row.dragging { z-index: 2; cursor: grabbing; background: var(--card); box-shadow: 0 6px 20px rgba(0,0,0,.22); }
 .mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--fill); border-radius: 12px; padding: 3px; margin: 12px 0 14px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
 .mode .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform 260ms cubic-bezier(.3,1.25,.5,1); }
 @media (prefers-color-scheme: dark) { .mode .thumb { background: #4a4652; } }
@@ -1910,22 +1912,68 @@ function priceTable(editable) {
 // Order within each category; customers and staff see the services in this order.
 function reorderSheet() {
   const lists = CAT_KEYS.map(c => ({ c, svcs: db.services.filter(s => s.category === c) })).filter(l => l.svcs.length);
-  const box = h("div");
-  const move = (svcs, i, by) => { const [s] = svcs.splice(i, 1); svcs.splice(i + by, 0, s); draw(); };
-  const arrow = (d, label, off, onclick) => h("button", { class: "btn secondary small order-btn", type: "button", "aria-label": label, disabled: off, onclick }, d);
-  function draw() {
-    box.replaceChildren(...lists.flatMap(({ c, svcs }) => [
-      h("div", { class: "lbl", style: "margin-top:12px" }, h("span", { class: "key", style: "background:var(--c-" + c + ")" }), CATS[c]),
-      ...svcs.map((s, i) => h("div", { class: "order-row" + (s.active ? "" : " dim") }, h("span", { class: "ln" }, s.name),
-        arrow("↑", "Move " + s.name + " up", i === 0, () => move(svcs, i, -1)),
-        arrow("↓", "Move " + s.name + " down", i === svcs.length - 1, () => move(svcs, i, 1))))
-    ]));
-  }
-  draw();
-  sheet("Rearrange services", [h("p", { class: "small muted", style: "margin:-6px 4px 4px" }, "Customers and staff see the services in this order."), box], "Save", async () => {
-    await call("reorder_services", { p_ids: lists.flatMap(l => l.svcs.map(s => s.id)) });
+  const box = h("div", null, lists.flatMap(({ c, svcs }) => [
+    h("div", { class: "lbl", style: "margin-top:12px" }, h("span", { class: "key", style: "background:var(--c-" + c + ")" }), CATS[c]),
+    h("div", { class: "order-list" }, svcs.map(s => dragRow(h("div", { class: "order-row" + (s.active ? "" : " dim"), "data-id": s.id, tabindex: 0, "aria-label": s.name + ". Use the up and down arrow keys to move it." },
+      h("span", { class: "ln" }, s.name), h("span", { class: "grip", "aria-hidden": "true" }, "≡")))))
+  ]));
+  sheet("Rearrange services", [h("p", { class: "small muted", style: "margin:-6px 4px 4px" }, "Hold a service, then drag it up or down. Customers and staff see the services in this order."), box], "Save", async () => {
+    await call("reorder_services", { p_ids: [...box.querySelectorAll(".order-row")].map(r => +r.dataset.id) });
     await sync(); toast("Order saved");
   }, { focus: false });
+}
+// Hold (touch) or press (mouse), then drag within its list. The dragged row stays in place in the DOM and its neighbours move, so the pointer capture survives.
+function dragRow(row) {
+  let timer = null, dragging = false, y0 = 0, x0 = 0, y = 0, top0 = 0, scroll0 = 0, scroller = null;
+  const glide = (sib, from) => { if (!REDUCED) sib.animate([{ transform: "translateY(" + (from - sib.offsetTop) + "px)" }, { transform: "none" }], { duration: 180, easing: "cubic-bezier(.32,.72,0,1)" }); };
+  const swap = (sib, before) => { const from = sib.offsetTop; row.parentNode.insertBefore(sib, before); glide(sib, from); };
+  function place() {
+    const list = row.parentNode, max = list.offsetHeight - row.offsetHeight;
+    const top = Math.max(0, Math.min(max, top0 + y - y0 + scroller.scrollTop - scroll0));
+    let p, n;
+    while ((p = row.previousElementSibling) && top < p.offsetTop + p.offsetHeight / 2) swap(p, row.nextSibling);
+    while ((n = row.nextElementSibling) && top + row.offsetHeight > n.offsetTop + n.offsetHeight / 2) swap(n, row);
+    row.style.transform = "translateY(" + (top - row.offsetTop) + "px)";
+  }
+  function tick() {
+    if (!dragging) return;
+    const r = scroller.getBoundingClientRect();
+    if (y < r.top + 48) scroller.scrollTop -= 6; else if (y > r.bottom - 48) scroller.scrollTop += 6;
+    place(); requestAnimationFrame(tick);
+  }
+  function begin() {
+    timer = null; dragging = true; haptic();
+    scroller = row.closest(".sheet"); top0 = row.offsetTop; scroll0 = scroller.scrollTop;
+    row.classList.add("dragging"); tick();
+  }
+  const stop = () => {
+    clearTimeout(timer); timer = null;
+    if (!dragging) return;
+    dragging = false; row.classList.remove("dragging");
+    const off = new DOMMatrix(getComputedStyle(row).transform).m42;
+    row.style.transform = "";
+    if (!REDUCED && off) row.animate([{ transform: "translateY(" + off + "px)" }, { transform: "none" }], { duration: 180, easing: "cubic-bezier(.32,.72,0,1)" });
+  };
+  row.addEventListener("pointerdown", e => {
+    if (e.button) return;
+    y0 = y = e.clientY; x0 = e.clientX;
+    try { row.setPointerCapture(e.pointerId); } catch (err) {}
+    if (e.pointerType === "mouse") begin(); else timer = setTimeout(begin, 250);
+  });
+  row.addEventListener("pointermove", e => {
+    y = e.clientY;
+    if (dragging) place();
+    if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > 8) { clearTimeout(timer); timer = null; } // moved before the hold ended: it's a scroll
+  });
+  row.addEventListener("pointerup", stop); row.addEventListener("pointercancel", stop);
+  row.addEventListener("touchmove", e => { if (dragging) e.preventDefault(); }, { passive: false }); // keep the page from scrolling during a drag
+  row.addEventListener("contextmenu", e => e.preventDefault());
+  row.addEventListener("keydown", e => {
+    const p = row.previousElementSibling, n = row.nextElementSibling;
+    if (e.key === "ArrowUp" && p) { e.preventDefault(); swap(p, row.nextSibling); }
+    if (e.key === "ArrowDown" && n) { e.preventDefault(); swap(n, row); }
+  });
+  return row;
 }
 function serviceSheet(s) {
   const cat = h("select", { id: "pCat" }, CAT_KEYS.map(c => h("option", { value: c }, CATS[c])));
@@ -1935,7 +1983,8 @@ function serviceSheet(s) {
   let shown = s ? s.active : true, onl = s ? s.online !== false : true;
   const vis = seg({ yes: "Shown", no: "Hidden" }, shown ? "yes" : "no", v => shown = v === "yes");
   const onSeg = seg({ yes: "Yes", no: "No" }, onl ? "yes" : "no", v => onl = v === "yes");
-  const dur = opts(h("select", { id: "pDur" }), [15,20,30,45,60,75,90,105,120,150,180,210,240,300,360,480].map(v => [v, durText(v)]), s ? s.duration_min || 60 : 60);
+  const durs = [10,15,20,30,45,60,75,90,105,120]; // an older service outside these starts on the nearest longer choice (or 2 h)
+  const dur = opts(h("select", { id: "pDur" }), durs.map(v => [v, durText(v)]), durs.find(v => v >= (s ? s.duration_min || 60 : 60)) || 120);
   sheet(s ? "Change service" : "Add service", [
     field("Category", cat), field("Name", nm), field("Price (GH₵)", price, "Leave empty if the price differs every time."),
     field("Takes about", dur, "Used to find free times on the booking page."),
