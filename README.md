@@ -6,13 +6,15 @@ Booking page and staff app for BrowTech Kumasi (pony, piercing, brows, tattoo, l
 
 | Who | Address | What they can do |
 |---|---|---|
-| **Customers** | https://princesalasi.github.io/brTechKumasi/ | Choose a service (with price and duration), a day and a **free** time, enter name and phone → sends a **request**. No login. |
+| **Customers** | https://princesalasi.github.io/brTechKumasi/ | Choose **one or several services** (with prices and durations, from any category), a day and a **free** time for all of them together, enter name and phone → sends a **request**. Tattoo customers then get a button to send their **inspiration photos to your WhatsApp**. No login. |
 | **Workers** | …/brTechKumasi/#staff (PIN) | New requests (confirm / decline, ready WhatsApp message), appointments, book by phone, **Service done**. They see only their own entries of today – no income. |
 | **Admin** | …/brTechKumasi/#staff (PIN) | Everything above plus **History** (filters, CSV), **Trends** (charts, PDF) and **More**: people, price list (price, duration, bookable online), booking settings (opening hours, customers at the same time, how far ahead, minimum notice, contact phone), activity log. |
 
 - Each person logs in with their own **6-digit PIN**; each phone stays logged in for **2 weeks**.
 - Every entry is **permanent** and logged with who and when. Mistakes are fixed with **Undo** (reason required); undone entries stay visible in red. Workers can only undo their own entries.
-- Customers only see times where there is still a free place for the **whole length** of the service (opening hours + "customers at the same time"). Requests and confirmed bookings both take a place; declined/cancelled ones free it again.
+- **Several services**: one booking can hold up to 6 services (e.g. brows + lashes). The times offered fit all of them together. When marking it **Done**, each service gets its own line with its own amount and "done by", so income per category and per person stays correct. Staff can also enter several services at once with **Service done**.
+- **Tattoo inspo**: after a request that includes a tattoo, the customer taps **Send inspo on WhatsApp**. WhatsApp opens a chat with the shop's WhatsApp number (More → Online booking → WhatsApp number) with a message naming their request; they attach the photos and send. The photos are not stored in the app.
+- Customers only see times where there is still a free place for the **whole length** of the services (opening hours + "customers at the same time"). Requests and confirmed bookings both take a place; declined/cancelled ones free it again.
 - Spam protection: hidden robot trap, max. 3 open requests per phone number, max. 40 online requests per hour.
 - All days and times are **Kumasi time**, even on a phone set to another time zone.
 
@@ -50,7 +52,7 @@ Check it once: repo **Actions** tab → *Keep database awake* → **Run workflow
 
 ### 5. Prices, booking settings and people
 Log in as the admin (…/brTechKumasi/#staff) →
-- **More → Online booking → Change booking settings**: opening hours, how many customers can be served at the same time, how far ahead and how short-notice customers can book, the phone number shown to customers.
+- **More → Online booking → Change booking settings**: opening hours, how many customers can be served at the same time, how far ahead and how short-notice customers can book, the **WhatsApp number** (customers can message it, and tattoo inspo photos go to it).
 - **More → Price list**: tap each service to set its price and how long it takes, or **Add service**. Hide services you don't offer, or switch off "bookable online" for ones that need a consultation first.
 - **More → People → Add person**: name and 6-digit PIN for everyone. Everyone can change their own PIN under **More**.
 

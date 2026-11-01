@@ -298,6 +298,22 @@ details.f[open] > summary { margin-bottom: 12px; }
 .svc .radio { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--text3); display: grid; place-items: center; transition: background 150ms, border-color 150ms; }
 .svc[aria-checked="true"] .radio { background: var(--tint); border-color: var(--tint); }
 .svc[aria-checked="true"] .radio::after { content: ""; width: 9px; height: 5px; border: solid var(--tint-ink); border-width: 0 0 2.2px 2.2px; transform: rotate(-45deg) translate(1px, -1px); }
+.svc .radio.check { border-radius: 7px; }
+.chosen { margin-top: 12px; background: var(--card); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow); }
+@media (prefers-color-scheme: dark) { .chosen { background: var(--card2); } }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 0; border-radius: 16px; background: var(--fill); padding: 5px 6px 5px 10px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; letter-spacing: 0; }
+.chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.chip .cx { width: 18px; height: 18px; border-radius: 50%; background: var(--fill2); display: grid; place-items: center; }
+.chip .cx svg { width: 11px; height: 11px; }
+.chosen-sum { display: flex; justify-content: space-between; align-items: baseline; margin: 10px 4px 0; font-size: 15px; color: var(--text2); letter-spacing: 0; }
+.chosen-sum b { color: var(--text); font-size: 18px; font-variant-numeric: tabular-nums; }
+.tint-banner { background: var(--fill); color: var(--text); margin-top: 4px; }
+.inspo { background: var(--fill); border-radius: 14px; padding: 14px; margin: 0 0 16px; text-align: left; }
+.inspo-h { font-weight: 700; font-size: 17px; margin-bottom: 4px; }
+.inspo p { margin: 0 0 12px; font-size: 15px; color: var(--text2); letter-spacing: 0; }
+.btn.wa { background: #1f9e55; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.btn.wa svg { width: 20px; height: 20px; display: block; }
 .slots { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
 .slot { border: 0; border-radius: 12px; padding: 11px 0; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; background: var(--card); color: var(--tint); box-shadow: var(--shadow); cursor: pointer; }
 @media (prefers-color-scheme: dark) { .slot { background: var(--card2); } }
@@ -313,6 +329,18 @@ details.f[open] > summary { margin-bottom: 12px; }
 .donecard .big svg { width: 34px; height: 34px; }
 .donecard h2 { font-size: 24px; margin: 0 0 6px; letter-spacing: -0.02em; }
 .hp { position: absolute !important; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.lines { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.line { background: var(--card); border-radius: 14px; padding: 12px 14px 2px; box-shadow: var(--shadow); }
+@media (prefers-color-scheme: dark) { .line { background: var(--card2); } .sheet .line .field input, .sheet .line .field select { background: rgba(255,255,255,.08); } }
+.line .lh { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+.line .ln { font-weight: 600; font-size: 17px; flex: 1; min-width: 0; }
+.line .hint { margin: -8px 4px 12px; }
+.line .field { margin-bottom: 12px; }
+.lx { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; background: var(--fill); color: var(--text2); display: grid; place-items: center; cursor: pointer; }
+.lx svg { width: 15px; height: 15px; }
+.total { display: flex; justify-content: space-between; align-items: baseline; margin: 0 4px 16px; font-size: 15px; color: var(--text2); letter-spacing: 0; }
+.total b { font-size: 22px; color: var(--text); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.addsel { color: var(--tint); font-weight: 600; }
 .foot-link { display: block; text-align: center; color: var(--text3); font-size: 14px; margin: 40px 0 0; text-decoration: none; letter-spacing: 0; }
 .hourrow { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 8px; min-height: 46px; padding: 0 12px; position: relative; }
 .hourrow + .hourrow::before { content: ""; position: absolute; top: 0; left: 12px; right: 0; border-top: .5px solid var(--sep); }
@@ -354,9 +382,10 @@ details.f[open] > summary { margin-bottom: 12px; }
   <div class="card" id="bkError" hidden style="margin-top:24px"></div>
   <div id="bkForm" hidden>
     <section class="step" id="bkStep1">
-      <h2 class="step-h"><span class="n">1</span>Choose a service</h2>
+      <h2 class="step-h"><span class="n">1</span>Choose your services</h2>
       <div class="pills" id="bkCats" role="group" aria-label="Category"></div>
-      <div class="group" id="bkServices" role="radiogroup" aria-label="Service"></div>
+      <div class="group" id="bkServices" role="group" aria-label="Services – you can choose several"></div>
+      <div id="bkChosen" class="chosen" hidden></div>
     </section>
     <section class="step off" id="bkStep2">
       <h2 class="step-h"><span class="n">2</span>Choose a day</h2>
@@ -373,6 +402,7 @@ details.f[open] > summary { margin-bottom: 12px; }
         <div class="rowf"><label for="bkPhone">Phone</label><input id="bkPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="WhatsApp or call"></div>
         <div class="rowf"><label for="bkNote">Note</label><input id="bkNote" autocomplete="off" placeholder="Optional"></div>
       </div>
+      <div class="banner tint-banner" id="bkTattoo" hidden><b>Tattoo idea?</b> After sending this request you can send your inspiration photos straight to us on WhatsApp.</div>
       <input class="hp" id="bkWebsite" tabindex="-1" autocomplete="off" aria-hidden="true">
       <p class="hint">This is a request. We will confirm your appointment by phone or WhatsApp.</p>
       <p class="err" id="bkErr" hidden role="alert"></p>
@@ -887,6 +917,7 @@ function requestRow(st, D) {
       h("div", { class: "ttl" }, a.customer),
       h("div", { class: "sub" }, h("span", { class: "key", style: "background:var(--c-" + (CATS[a.category] ? a.category : "other") + ")" }), a.service_name + " · " + durText(a.duration_min || 60)),
       h("div", { class: "sub" }, [a.phone, a.note].filter(Boolean).join(" · ")),
+      apptServices(a).some(x => x.category === "tattoo") ? h("div", { class: "sub" }, h("span", { class: "tag tint", style: "margin-left:0" }, "Tattoo"), " inspo photos may come on WhatsApp") : null,
       h("div", { class: "row", style: "margin-top:8px", onclick: e => e.stopPropagation() },
         h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: () => confirmSheet(st) }, "Confirm"),
         h("button", { class: "btn small danger needs-net", type: "button", disabled: !online, onclick: () => declineSheet(st) }, "Decline"))));
@@ -948,24 +979,30 @@ function todaySheet() {
   ], null, null);
 }
 
-/* ---------- service picker ---------- */
-function serviceSelect(id, selected) {
-  const sel = h("select", { id });
-  sel.append(h("option", { value: "" }, "Choose a service…"));
+/* ---------- service picker (several services) ---------- */
+// A select that adds one service each time it is used, then goes back to "Add a service…"
+function addSelect(id, label, excludeIds) {
+  const sel = h("select", { id, class: "addsel" });
+  sel.append(h("option", { value: "" }, label));
   CAT_KEYS.forEach(c => {
-    const svcs = db.services.filter(s => s.category === c && (s.active || s.id === selected));
+    const svcs = db.services.filter(s => s.category === c && s.active && !excludeIds.includes(s.id));
     if (!svcs.length) return;
     sel.append(h("optgroup", { label: CATS[c] }, svcs.map(s => h("option", { value: String(s.id) }, s.name + (s.price > 0 ? " — " + money(s.price) : "")))));
   });
   sel.append(h("optgroup", { label: "Not on the price list" }, h("option", { value: "other" }, "Other service (type it)…")));
-  sel.value = selected ? String(selected) : "";
   return sel;
 }
-function otherFields(prefix) {
-  const cat = h("select", { id: prefix + "OCat" }, h("option", { value: "" }, "Category…"), CAT_KEYS.map(c => h("option", { value: c }, CATS[c])));
-  const nm = h("input", { id: prefix + "OName", autocomplete: "off", placeholder: "e.g. Henna brows" });
-  const box = h("div", { class: "grid2", hidden: true }, field("Category", cat), field("Service name", nm));
-  return { box, cat, nm };
+function svcFromList(id) { const s = db.services.find(x => x.id === id); return s ? { id: s.id, category: s.category, name: s.name, price: s.price, duration_min: s.duration_min || 60 } : null; }
+// services stored on an appointment (several), or the single one from older entries
+function apptServices(a) {
+  if (Array.isArray(a.services) && a.services.length) return a.services.map(x => Object.assign({}, x));
+  return [{ id: a.service_id, category: a.category, name: a.service_name, price: (svcFromList(a.service_id) || {}).price || 0, duration_min: a.duration_min || 60 }];
+}
+function otherInputs(prefix, cat0, name0) {
+  const cat = h("select", { id: prefix + "Cat", "aria-label": "Category" }, h("option", { value: "" }, "Category…"), CAT_KEYS.map(c => h("option", { value: c }, CATS[c])));
+  cat.value = cat0 || "";
+  const nm = h("input", { id: prefix + "Name", autocomplete: "off", placeholder: "Service name, e.g. Henna brows", value: name0 || "" });
+  return { cat, nm };
 }
 function staffSelect(id, value, withAnyone) {
   const sel = h("select", { id });
@@ -975,100 +1012,151 @@ function staffSelect(id, value, withAnyone) {
   sel.value = value ? String(value) : (withAnyone ? "" : String(session.user.id));
   return sel;
 }
-function readService(sel, o) {
-  if (sel.value === "other") {
-    if (!o.cat.value) { nudge(o.cat); throw new Error("Choose the category"); }
-    if (!o.nm.value.trim()) { nudge(o.nm); throw new Error("Type the service name"); }
-    return { p_service_id: null, p_category: o.cat.value, p_name: o.nm.value.trim() };
-  }
-  if (!sel.value) { nudge(sel); throw new Error("Choose a service"); }
-  return { p_service_id: +sel.value, p_category: null, p_name: null };
-}
+const X_BTN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg>';
 
-/* ---------- "service done" sheet ---------- */
+/* ---------- "service done" sheet: one line per service ---------- */
 function saleFormSheet(opts) {
   opts = opts || {};
   const st = opts.appt, a = st ? st.a : null;
-  const sel = serviceSelect("sSvc", a ? a.service_id : null);
-  const o = otherFields("s");
-  if (a && !a.service_id) { sel.value = "other"; o.cat.value = a.category; o.nm.value = a.service_name; }
-  const amt = h("input", { id: "sAmt", class: "money", inputmode: "decimal", autocomplete: "off", placeholder: "0", "aria-label": "Amount paid in Ghana cedis" });
-  const amtHint = h("div", { class: "hint", style: "text-align:center" });
+  const defStaff = st && st.staff ? st.staff : session.user.id;
+  const lines = []; let n = 0;
+  const box = h("div", { class: "lines" });
+  const totalEl = h("div", { class: "total" });
   let pay = "cash";
   const paySeg = seg({ cash: "Cash", momo: "MoMo", card: "Card / bank" }, pay, v => { pay = v; });
   const payBlk = h("div", { class: "blk" }, h("span", { class: "lbl" }, "Paid with"), paySeg);
-  const staff = staffSelect("sStaff", st && st.staff ? st.staff : session.user.id, false);
+  const addWrap = h("div", { class: "field" });
+  function addLine(svc) {
+    const k = ++n, other = !svc.id;
+    const amt = h("input", { id: "lAmt" + k, inputmode: "decimal", autocomplete: "off", placeholder: "0", value: svc.price > 0 ? String(svc.price) : "", "aria-label": "Amount for " + (svc.name || "service") });
+    const staff = staffSelect("lStaff" + k, defStaff, false);
+    const o = other ? otherInputs("lO" + k, svc.category, svc.name) : null;
+    const hint = h("div", { class: "hint" });
+    const line = { svc, amt, staff, o, hint };
+    const el = h("div", { class: "line" },
+      h("div", { class: "lh" },
+        h("span", { class: "key", style: "background:var(--c-" + (CATS[svc.category] ? svc.category : "other") + ")" }),
+        h("span", { class: "ln" }, other ? "Other service" : svc.name),
+        h("button", { class: "lx", type: "button", "aria-label": "Remove " + (svc.name || "service"), html: X_BTN, onclick: () => { lines.splice(lines.indexOf(line), 1); el.remove(); upd(); } })),
+      other ? h("div", { class: "grid2" }, field("Category", o.cat), field("Name", o.nm)) : null,
+      h("div", { class: "grid2" },
+        h("div", { class: "field" }, h("label", { for: "lAmt" + k }, "Amount GH₵"), amt),
+        h("div", { class: "field" }, h("label", { for: "lStaff" + k }, "Done by"), staff)),
+      hint);
+    line.el = el;
+    amt.addEventListener("input", upd);
+    lines.push(line); box.append(el);
+  }
+  function renderAdd() {
+    const sel = addSelect("sAdd", lines.length ? "+ Add another service…" : "Choose a service…", lines.map(l => l.svc.id).filter(Boolean));
+    sel.addEventListener("change", () => {
+      const v = sel.value; if (!v) return;
+      addLine(v === "other" ? { id: null, category: "", name: "", price: 0, duration_min: 60 } : svcFromList(+v));
+      upd(); renderAdd();
+      const last = lines[lines.length - 1]; setTimeout(() => (last.o ? last.o.cat : last.amt).focus(), 50);
+    });
+    addWrap.replaceChildren(...(lines.length ? [sel] : [h("label", { for: "sAdd" }, "Service"), sel]));
+  }
+  function upd() {
+    let tot = 0, ok = true;
+    lines.forEach(l => {
+      let v = null; try { v = readMoney(l.amt); tot += cents(v); } catch (e) { ok = false; }
+      const lp = l.svc.price > 0 ? l.svc.price : null;
+      l.hint.textContent = lp !== null ? (v !== null && cents(v) !== cents(lp) ? "Price list " + money(lp) + " · changed for this customer" : "Price list " + money(lp)) : l.svc.id ? "No price on the list yet" : "";
+      l.hint.hidden = !l.hint.textContent;
+    });
+    totalEl.hidden = lines.length < 2;
+    totalEl.replaceChildren(h("span", null, "Total · " + lines.length + " services"), h("b", null, ok ? money(fromCents(tot)) : "–"));
+    payBlk.hidden = lines.length > 0 && ok && tot === 0;
+    if (!lines.length) renderAdd();
+  }
+  (a ? apptServices(a) : []).forEach(x => addLine(x.id ? (svcFromList(x.id) || x) : x));
+  renderAdd(); upd();
   const date = h("input", { id: "sDate", type: "date", value: today(), max: today() });
   const cust = h("input", { id: "sCust", autocomplete: "off", placeholder: "Optional", value: a ? a.customer : "" });
   const phone = h("input", { id: "sPhone", type: "tel", autocomplete: "off", placeholder: "Optional", value: a && a.phone ? a.phone : "" });
   const note = h("input", { id: "sNote", autocomplete: "off", placeholder: "Optional" });
-  let touched = false;
-  const listPrice = () => { const s = D0.svcById[sel.value]; return s && s.price > 0 ? s.price : null; };
-  const D0 = derive();
-  const upd = () => {
-    o.box.hidden = sel.value !== "other";
-    const lp = listPrice();
-    if (!touched) amt.value = lp !== null ? String(lp) : "";
-    let v = null; try { v = readMoney(amt); } catch (e) {}
-    amtHint.textContent = lp !== null ? (v !== null && cents(v) !== cents(lp) ? "Price list: " + money(lp) + " · changed for this customer" : "Price list: " + money(lp)) : sel.value && sel.value !== "other" ? "No price on the list yet – type the amount" : "Amount paid in GH₵";
-    payBlk.hidden = v === 0;
-  };
-  sel.addEventListener("change", () => { touched = false; upd(); });
-  amt.addEventListener("input", () => { touched = true; upd(); });
-  upd();
   const s = sheet(a ? "Done: " + a.customer : "Service done", [
-    a ? h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, "Appointment " + relDay(st.date) + " " + st.time + " · " + a.service_name) : null,
-    field("Service", sel), o.box,
-    h("div", { class: "blk" }, h("div", { class: "moneywrap" }, h("span", { class: "cur", "aria-hidden": "true" }, "GH₵"), amt), amtHint),
+    a ? h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, "Appointment " + relDay(st.date) + " " + st.time + " · " + a.service_name + ". Change amounts or add/remove services if needed.") : null,
+    box, addWrap, totalEl,
     payBlk,
     h("div", { class: "rows" },
-      h("div", { class: "rowf" }, h("label", { for: "sStaff" }, "Done by"), staff),
       isAdmin() ? h("div", { class: "rowf" }, h("label", { for: "sDate" }, "Date"), date) : null,
       h("div", { class: "rowf" }, h("label", { for: "sCust" }, "Customer"), cust),
       h("div", { class: "rowf" }, h("label", { for: "sPhone" }, "Phone"), phone),
       h("div", { class: "rowf" }, h("label", { for: "sNote" }, "Note"), note))
   ], "Save", async () => {
-    const svc = readService(sel, o);
-    let v; try { v = readMoney(amt); } catch (e) { nudge(amt); throw e; }
+    if (!lines.length) { nudge(addWrap.querySelector("select")); throw new Error("Choose a service"); }
+    let tot = 0;
+    const items = lines.map(l => {
+      if (l.o) {
+        if (!l.o.cat.value) { nudge(l.o.cat); throw new Error("Choose the category of the other service"); }
+        if (!l.o.nm.value.trim()) { nudge(l.o.nm); throw new Error("Type the name of the other service"); }
+      }
+      let v; try { v = readMoney(l.amt); } catch (e) { nudge(l.amt); throw new Error("Enter the amount for " + (l.o ? l.o.nm.value.trim() || "the other service" : l.svc.name)); }
+      tot += cents(v);
+      return { service_id: l.svc.id || null, category: l.o ? l.o.cat.value : null, name: l.o ? l.o.nm.value.trim() : null, amount: v, staff_id: +l.staff.value };
+    });
     if (!date.value) throw new Error("Choose the date");
-    const r = await call("add_sale", Object.assign(svc, { p_amount: v, p_payment: v === 0 ? "free" : pay, p_staff_id: +staff.value, p_date: date.value,
-      p_customer: cust.value, p_phone: phone.value, p_note: note.value, p_appointment_id: a ? a.id : null }));
+    const r = await call("add_sales", { p_items: items, p_payment: pay, p_date: date.value, p_customer: cust.value, p_phone: phone.value, p_note: note.value, p_appointment_id: a ? a.id : null });
     await sync();
-    toast("Saved · " + money(v), 6000, "Undo", () => quickUndo("sale", r.id));
+    toast("Saved · " + money(fromCents(tot)) + (items.length > 1 ? " · " + items.length + " services" : ""), 6000, "Undo", () => quickUndoMany("sale", r.ids));
   }, { focus: false });
   return s;
 }
+async function quickUndoMany(target, ids) {
+  try {
+    for (const id of ids) await call("undo_entry", { p_target: target, p_id: id, p_reason: "Undone right after entering" });
+    haptic(); await sync(); toast("Undone");
+  } catch (e) { await sync(); toast(e.message, 4500); }
+}
 
-/* ---------- booking sheet ---------- */
+/* ---------- booking sheet (several services) ---------- */
 function nextSlot() { const [H, M] = nowHM().split(":").map(Number); let m = H * 60 + M + 30; m = Math.ceil(m / 30) * 30; if (m >= 24 * 60) m = 9 * 60; return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
 function bookSheet() {
   const cust = h("input", { id: "bCust", autocomplete: "off" });
   const phone = h("input", { id: "bPhone", type: "tel", autocomplete: "off", placeholder: "Optional" });
-  const sel = serviceSelect("bSvc", null);
-  const o = otherFields("b");
-  sel.addEventListener("change", () => { o.box.hidden = sel.value !== "other"; });
+  const chosen = []; let other = null;
+  const list = h("div", { class: "group", style: "margin-bottom:10px" });
+  const addWrap = h("div", { class: "field" });
   const date = h("input", { id: "bDate", type: "date", value: apptDay && apptDay >= today() ? apptDay : today(), min: today() });
   const time = h("input", { id: "bTime", type: "time", step: 300, value: apptDay && apptDay > today() ? "10:00" : nextSlot() });
   const staff = staffSelect("bStaff", null, true);
   const note = h("input", { id: "bNote", autocomplete: "off", placeholder: "Optional" });
   const free = h("div", { class: "slots", style: "margin:0 0 14px" });
+  function renderList() {
+    const rows = chosen.map((x, i) => h("div", { class: "svc", style: "cursor:default" },
+      h("span", { class: "key", style: "background:var(--c-" + x.category + ")" }),
+      h("span", null, h("div", { class: "nm" }, x.name), h("div", { class: "du" }, durText(x.duration_min) + (x.price > 0 ? " · " + money(x.price) : ""))),
+      h("button", { class: "lx", style: "margin-left:auto", type: "button", "aria-label": "Remove " + x.name, html: X_BTN, onclick: () => { chosen.splice(i, 1); changed(); } })));
+    if (other) rows.push(h("div", { class: "svc", style: "cursor:default;flex-wrap:wrap" },
+      h("div", { class: "grid2", style: "flex:1 1 100%" }, field("Other: category", other.cat), field("Name (counts 1 h)", other.nm)),
+      h("button", { class: "link", style: "padding:0 4px 4px;text-align:left;color:var(--red)", type: "button", onclick: () => { other = null; changed(); } }, "Remove other service")));
+    list.replaceChildren(...rows); list.hidden = !rows.length;
+    const mins = chosen.reduce((t, x) => t + x.duration_min, 0) + (other ? 60 : 0), price = chosen.reduce((t, x) => t + cents(x.price), 0);
+    const sel = addSelect("bAdd", rows.length ? "+ Add another service…" : "Choose a service…", chosen.map(x => x.id));
+    if (other) sel.querySelector('option[value="other"]').disabled = true;
+    sel.addEventListener("change", () => { const v = sel.value; if (!v) return; if (v === "other") other = otherInputs("bO"); else chosen.push(svcFromList(+v)); changed(); });
+    addWrap.replaceChildren(rows.length ? h("div", { class: "hint", style: "margin:0 4px 8px" }, "Together: " + durText(mins) + (price ? " · " + money(fromCents(price)) + (other ? " + other" : "") : "")) : h("label", { for: "bAdd" }, "Services"), sel);
+  }
   let ticket = 0;
   const loadFree = async () => {
     const my = ++ticket;
     if (!date.value) { free.replaceChildren(); return; }
     free.replaceChildren(h("p", { class: "hint slotnote" }, "Looking for free times…"));
     try {
-      const list = await call("staff_slots", { p_service_id: sel.value && sel.value !== "other" ? +sel.value : null, p_date: date.value });
+      const l = await call("staff_slots", { p_service_ids: chosen.map(x => x.id), p_date: date.value, p_extra_min: other ? 60 : 0 });
       if (my !== ticket) return;
-      free.replaceChildren(h("p", { class: "hint slotnote", style: "margin-top:0" }, list.length ? "Free times (tap to use – you can also type any time):" : "No free times on this day in the opening hours. You can still type a time."),
-        ...list.map(t => h("button", { class: "slot", type: "button", "aria-pressed": String(t === time.value), onclick: () => { time.value = t; [...free.querySelectorAll(".slot")].forEach(b => b.setAttribute("aria-pressed", String(b.textContent === t))); } }, t)));
+      free.replaceChildren(h("p", { class: "hint slotnote", style: "margin-top:0" }, l.length ? "Free times (tap to use – you can also type any time):" : "No free times on this day in the opening hours. You can still type a time."),
+        ...l.map(t => h("button", { class: "slot", type: "button", "aria-pressed": String(t === time.value), onclick: () => { time.value = t; [...free.querySelectorAll(".slot")].forEach(b => b.setAttribute("aria-pressed", String(b.textContent === t))); } }, t)));
     } catch (e) { if (my === ticket) free.replaceChildren(h("p", { class: "hint slotnote" }, e.message)); }
   };
-  sel.addEventListener("change", loadFree); date.addEventListener("change", loadFree);
-  setTimeout(loadFree, 50);
+  function changed() { renderList(); loadFree(); }
+  date.addEventListener("change", loadFree);
+  renderList(); setTimeout(loadFree, 50);
   sheet("Book appointment", [
     field("Customer name", cust), field("Phone", phone),
-    field("Service", sel), o.box,
+    list, addWrap,
     h("div", { class: "rows" },
       h("div", { class: "rowf" }, h("label", { for: "bDate" }, "Date"), date),
       h("div", { class: "rowf" }, h("label", { for: "bTime" }, "Time"), time)),
@@ -1078,10 +1166,13 @@ function bookSheet() {
       h("div", { class: "rowf" }, h("label", { for: "bNote" }, "Note"), note))
   ], "Book", async () => {
     if (!cust.value.trim()) { nudge(cust); throw new Error("Enter the customer's name"); }
-    const svc = readService(sel, o);
+    if (!chosen.length && !other) { nudge(addWrap.querySelector("select")); throw new Error("Choose at least one service"); }
+    if (other && !other.cat.value) { nudge(other.cat); throw new Error("Choose the category of the other service"); }
+    if (other && !other.nm.value.trim()) { nudge(other.nm); throw new Error("Type the name of the other service"); }
     if (!date.value) throw new Error("Choose the date");
     if (!/^\d{2}:\d{2}/.test(time.value)) throw new Error("Choose the time");
-    const r = await call("book_appointment", Object.assign(svc, { p_date: date.value, p_time: time.value, p_staff_id: staff.value ? +staff.value : null, p_customer: cust.value, p_phone: phone.value, p_note: note.value }));
+    const r = await call("book_appointment", { p_service_ids: chosen.map(x => x.id), p_other_category: other ? other.cat.value : null, p_other_name: other ? other.nm.value.trim() : null,
+      p_date: date.value, p_time: time.value, p_staff_id: staff.value ? +staff.value : null, p_customer: cust.value, p_phone: phone.value, p_note: note.value });
     apptDay = date.value;
     await sync();
     toast("Booked · " + relDay(date.value) + " " + time.value, 6000, "Undo", () => quickUndo("appointment", r.id));
@@ -1492,7 +1583,7 @@ function cfgSummary() {
     h("tr", null, h("td", null, "Times offered every"), h("td", { class: "n" }, c.slot_minutes + " min")),
     h("tr", null, h("td", null, "Book up to"), h("td", { class: "n" }, c.days_ahead + " days ahead")),
     h("tr", null, h("td", null, "Minimum notice"), h("td", { class: "n" }, c.min_notice_hours ? c.min_notice_hours + " h" : "none")),
-    h("tr", null, h("td", null, "Contact phone"), h("td", { class: "n" }, c.contact_phone || "–")));
+    h("tr", null, h("td", null, "WhatsApp number"), h("td", { class: "n" + (c.contact_phone ? "" : " neg") }, c.contact_phone || "not set – needed for tattoo inspo")));
 }
 function opts(sel, list, value) { list.forEach(([v, t]) => sel.append(h("option", { value: String(v) }, t))); sel.value = String(value); return sel; }
 function settingsSheet() {
@@ -1513,7 +1604,7 @@ function settingsSheet() {
   const slot = opts(h("select", { id: "sSlot" }), [15,20,30,45,60].map(v => [v, "every " + v + " min"]), c.slot_minutes);
   const days = opts(h("select", { id: "sDays" }), [7,14,21,30,45,60,90].map(v => [v, v + " days ahead"]), c.days_ahead);
   const notice = opts(h("select", { id: "sNotice" }), [[0, "none"], [1, "1 hour"], [2, "2 hours"], [3, "3 hours"], [6, "6 hours"], [12, "12 hours"], [24, "1 day"], [48, "2 days"]], c.min_notice_hours);
-  const phone = h("input", { id: "sPh", type: "tel", autocomplete: "off", value: c.contact_phone || "", placeholder: "Shown to customers" });
+  const phone = h("input", { id: "sPh", type: "tel", autocomplete: "off", value: c.contact_phone || "", placeholder: "e.g. 024 123 4567" });
   sheet("Booking settings", [
     h("div", { class: "blk" }, h("span", { class: "lbl" }, "Customers can request appointments online"), onSeg),
     h("div", { class: "lbl" }, "Opening hours"),
@@ -1523,8 +1614,9 @@ function settingsSheet() {
       h("div", { class: "rowf" }, h("label", { for: "sSlot" }, "Times offered"), slot),
       h("div", { class: "rowf" }, h("label", { for: "sDays" }, "Book up to"), days),
       h("div", { class: "rowf" }, h("label", { for: "sNotice" }, "Min. notice"), notice),
-      h("div", { class: "rowf" }, h("label", { for: "sPh" }, "Contact phone"), phone)),
-    h("p", { class: "hint" }, "“At the same time” = how many customers can be served together. A time is only offered if there is still a free place for the whole length of the service.")
+      h("div", { class: "rowf" }, h("label", { for: "sPh" }, "WhatsApp number"), phone)),
+    h("p", { class: "hint" }, "“At the same time” = how many customers can be served together. A time is only offered if there is still a free place for the whole length of all chosen services."),
+    h("p", { class: "hint" }, "WhatsApp number: customers can call or message it, and tattoo customers send their inspiration photos to it. Without it, the inspo button is not shown.")
   ], "Save", async () => {
     const hours = {};
     rows.forEach(r => { hours[r.d] = r.chk.checked ? [r.from.value.slice(0, 5), r.to.value.slice(0, 5)] : null; if (r.chk.checked && !(r.from.value < r.to.value)) throw new Error("Check the hours: opening must be before closing"); });
@@ -1789,7 +1881,13 @@ async function downloadTrendsPdf() {
 
 /* ================= customer booking page ================= */
 const durText = m => m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : "");
-const bk = { info: null, cat: null, svc: null, day: null, time: null, loadingSlots: 0, sent: null };
+const bk = { info: null, cat: null, svcs: [], day: null, time: null, loadingSlots: 0, sent: null };
+const MAX_SVCS = 6;
+const bkMins = () => bk.svcs.reduce((t, x) => t + x.duration_min, 0);
+const bkPrice = () => bk.svcs.reduce((t, x) => t + cents(x.price), 0);
+const bkKey = () => bk.svcs.map(x => x.id).sort((a, b) => a - b).join(",") + "|" + bk.day;
+const hasTattoo = list => list.some(x => x.category === "tattoo");
+const bkNames = list => list.map(x => x.name).join(" + ");
 const bookLink = () => location.origin + location.pathname;
 function waNumber(phone) {
   let d = (phone || "").replace(/\D/g, "");
@@ -1798,6 +1896,7 @@ function waNumber(phone) {
   else if (d.length === 9) d = "233" + d;
   return d;
 }
+const WA_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2a9.8 9.8 0 0 0-8.4 14.8L2.2 21.8l4.9-1.3A9.8 9.8 0 1 0 12 2.2zm0 17.8a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.6.3 2.7 2.7 0 0 0-.9 2c0 1.2.9 2.4 1 2.5.1.2 1.7 2.6 4.2 3.7 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.5-.4z"/></svg>';
 const waLink = (phone, text) => "https://wa.me/" + waNumber(phone) + (text ? "?text=" + encodeURIComponent(text) : "");
 async function showBook() {
   $("login").hidden = true; $("app").hidden = true; $("book").hidden = false; $("bookbar").hidden = false;
@@ -1837,12 +1936,31 @@ function renderBook() {
   const cats = CAT_KEYS.filter(c => info.services.some(x => x.category === c));
   $("bkCats").replaceChildren(...cats.map(c => h("button", { class: "pill press", type: "button", "aria-pressed": String(c === bk.cat), onclick: () => { bk.cat = c; renderBook(); } },
     h("i", { style: "background:var(--c-" + c + ")" }), CATS[c])));
-  $("bkServices").replaceChildren(...info.services.filter(x => x.category === bk.cat).map(x => h("button", { class: "svc", type: "button", role: "radio", "aria-checked": String(!!bk.svc && bk.svc.id === x.id),
-      onclick: () => { if (bk.svc && bk.svc.id === x.id) return; bk.svc = x; bk.time = null; if (!bk.day) bk.day = openDays()[0] || null; renderBook(); loadSlots(); setTimeout(() => $("bkStep2").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }), 60); } },
-    h("span", { class: "radio", "aria-hidden": "true" }),
+  const isOn = x => bk.svcs.some(y => y.id === x.id);
+  $("bkServices").replaceChildren(...info.services.filter(x => x.category === bk.cat).map(x => h("button", { class: "svc", type: "button", role: "checkbox", "aria-checked": String(isOn(x)),
+      onclick: () => {
+        const first = !bk.svcs.length;
+        if (isOn(x)) bk.svcs = bk.svcs.filter(y => y.id !== x.id);
+        else { if (bk.svcs.length >= MAX_SVCS) { toast("You can choose up to " + MAX_SVCS + " services"); return; } bk.svcs.push(x); }
+        bk.time = null; if (!bk.day) bk.day = openDays()[0] || null;
+        renderBook(); loadSlots();
+        if (first && bk.svcs.length) setTimeout(() => $("bkChosen").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "nearest" }), 60);
+      } },
+    h("span", { class: "radio check", "aria-hidden": "true" }),
     h("span", null, h("div", { class: "nm" }, x.name), h("div", { class: "du" }, durText(x.duration_min))),
     x.price > 0 ? h("span", { class: "pr" }, money(x.price)) : h("span", { class: "pr na" }, "Price on request"))));
-  $("bkStep2").classList.toggle("off", !bk.svc); $("bkStep3").classList.toggle("off", !bk.svc || !bk.day); $("bkStep4").classList.toggle("off", !bk.time);
+  // chosen services (from all categories) with total
+  const ch = $("bkChosen");
+  ch.hidden = !bk.svcs.length;
+  if (bk.svcs.length) ch.replaceChildren(
+    h("div", { class: "chips" }, bk.svcs.map(x => h("button", { class: "chip", type: "button", "aria-label": "Remove " + x.name, onclick: () => { bk.svcs = bk.svcs.filter(y => y.id !== x.id); bk.time = null; renderBook(); loadSlots(); } },
+      h("i", { style: "background:var(--c-" + x.category + ")" }), x.name, h("span", { class: "cx", html: X_BTN })))),
+    h("div", { class: "chosen-sum" }, h("span", null, bk.svcs.length + (bk.svcs.length === 1 ? " service" : " services") + " · about " + durText(bkMins())),
+      h("b", null, bkPrice() ? money(fromCents(bkPrice())) + (bk.svcs.some(x => !(x.price > 0)) ? " +" : "") : "")),
+    h("p", { class: "hint", style: "margin:4px 4px 0" }, "You can add services from other categories too."));
+  $("bkTattoo").hidden = !hasTattoo(bk.svcs) || !info.contact_phone;
+  $("bkNote").placeholder = hasTattoo(bk.svcs) ? "Tattoo size and where on the body" : "Optional";
+  $("bkStep2").classList.toggle("off", !bk.svcs.length); $("bkStep3").classList.toggle("off", !bk.svcs.length || !bk.day); $("bkStep4").classList.toggle("off", !bk.time);
   const days = openDays();
   const strip = $("bkDays"), keep = strip.scrollLeft;
   strip.replaceChildren(...days.map(d => { const dt = fromISO(d); return h("button", { class: "daychip press", type: "button", "aria-pressed": String(d === bk.day), "aria-label": longDay(d),
@@ -1856,61 +1974,69 @@ function renderBook() {
 }
 let slotCache = {};
 async function loadSlots() {
-  if (!bk.svc || !bk.day) return;
-  const key = bk.svc.id + "|" + bk.day, ticket = ++bk.loadingSlots;
+  if (!bk.svcs.length || !bk.day) return;
+  const key = bkKey(), ticket = ++bk.loadingSlots;
   if (!slotCache[key]) { slotCache[key] = "loading"; renderSlots(); }
   try {
-    const list = await rpc("public_slots", { p_service_id: bk.svc.id, p_date: bk.day });
+    const list = await rpc("public_slots", { p_service_ids: bk.svcs.map(x => x.id), p_date: bk.day });
     slotCache[key] = list;
   } catch (e) { slotCache[key] = { error: e.message }; }
   if (ticket === bk.loadingSlots) renderSlots();
 }
 function renderSlots() {
   const box = $("bkTimes");
-  if (!bk.svc || !bk.day) { box.replaceChildren(h("p", { class: "hint slotnote" }, "Choose a service and a day first.")); return; }
-  const v = slotCache[bk.svc.id + "|" + bk.day];
+  if (!bk.svcs.length || !bk.day) { box.replaceChildren(h("p", { class: "hint slotnote" }, "Choose a service and a day first.")); return; }
+  const v = slotCache[bkKey()];
   if (!v || v === "loading") { box.replaceChildren(h("p", { class: "hint slotnote" }, "Looking for free times…")); return; }
   if (v.error) { box.replaceChildren(h("p", { class: "err slotnote" }, v.error)); return; }
-  if (!v.length) { box.replaceChildren(h("p", { class: "hint slotnote" }, "No free times on " + longDay(bk.day) + ". Please choose another day.")); return; }
+  if (!v.length) { box.replaceChildren(h("p", { class: "hint slotnote" }, "No free times on " + longDay(bk.day) + (bk.svcs.length > 1 ? " for all " + bk.svcs.length + " services together (about " + durText(bkMins()) + ")" : "") + ". Please choose another day.")); return; }
   box.replaceChildren(...v.map(t => h("button", { class: "slot press", type: "button", "aria-pressed": String(t === bk.time),
     onclick: () => { bk.time = t; renderBook(); if (!$("bkName").value) setTimeout(() => $("bkStep4").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }), 60); } }, t)));
 }
 function updateBookBar() {
   const name = $("bkName").value.trim(), phone = $("bkPhone").value.replace(/\D/g, "");
   const sum = $("bkSum"); sum.innerHTML = "";
-  if (!bk.svc) sum.append(h("b", null, "Choose a service"), "then a day and time");
-  else sum.append(h("b", null, bk.svc.name + (bk.svc.price > 0 ? " · " + money(bk.svc.price) : "")), bk.day ? relDay(bk.day) + (bk.time ? " at " + bk.time : " · choose a time") : "Choose a day");
-  $("bkSend").disabled = !(bk.svc && bk.day && bk.time && name.length >= 2 && phone.length >= 9);
+  if (!bk.svcs.length) sum.append(h("b", null, "Choose a service"), "then a day and time");
+  else sum.append(h("b", null, (bk.svcs.length > 1 ? bk.svcs.length + " services" : bk.svcs[0].name) + (bkPrice() ? " · " + money(fromCents(bkPrice())) : "")), bk.day ? relDay(bk.day) + (bk.time ? " at " + bk.time : " · choose a time") : "Choose a day");
+  $("bkSend").disabled = !(bk.svcs.length && bk.day && bk.time && name.length >= 2 && phone.length >= 9);
 }
 async function sendBooking() {
   const btn = $("bkSend"); $("bkErr").hidden = true;
   if (!$("bkName").value.trim()) { nudge($("bkName")); return; }
   btn.disabled = true; btn.textContent = "Sending…";
   try {
-    const r = await rpc("public_request", { p_service_id: bk.svc.id, p_date: bk.day, p_time: bk.time, p_name: $("bkName").value, p_phone: $("bkPhone").value, p_note: $("bkNote").value, p_website: $("bkWebsite").value });
+    const r = await rpc("public_request", { p_service_ids: bk.svcs.map(x => x.id), p_date: bk.day, p_time: bk.time, p_name: $("bkName").value, p_phone: $("bkPhone").value, p_note: $("bkNote").value, p_website: $("bkWebsite").value });
     haptic();
-    bk.sent = { ref: r.ref, svc: bk.svc, day: bk.day, time: bk.time, name: $("bkName").value.trim() };
+    bk.sent = { ref: r.ref, svcs: bk.svcs.slice(), day: bk.day, time: bk.time, name: $("bkName").value.trim() };
     showBookDone();
   } catch (e) {
     $("bkErr").textContent = e.message; $("bkErr").hidden = false;
-    if (/no longer free/.test(e.message)) { bk.time = null; delete slotCache[bk.svc.id + "|" + bk.day]; renderBook(); loadSlots(); $("bkStep3").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth" }); }
+    if (/no longer available/.test(e.message)) { slotCache = {}; showBook(); }
+    if (/no longer free/.test(e.message)) { bk.time = null; delete slotCache[bkKey()]; renderBook(); loadSlots(); $("bkStep3").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth" }); }
   } finally { btn.textContent = "Request"; updateBookBar(); }
 }
 function showBookDone() {
-  const x = bk.sent, ph = bk.info.contact_phone;
+  const x = bk.sent, ph = bk.info.contact_phone, tattoo = hasTattoo(x.svcs);
+  const price = x.svcs.reduce((t, y) => t + cents(y.price), 0), mins = x.svcs.reduce((t, y) => t + y.duration_min, 0);
+  const when = longDay(x.day) + " at " + x.time;
+  const inspoText = "Hello BrowTech Kumasi, this is " + x.name + ". Here is my tattoo inspiration for my request " + x.ref + " (" + bkNames(x.svcs) + ", " + when + "):";
   $("bkForm").hidden = true; $("bookbar").hidden = true; $("bkDone").hidden = false;
   $("bkDone").replaceChildren(h("div", { class: "card donecard" },
     h("div", { class: "big", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>' }),
     h("h2", null, "Request sent"),
     h("p", { class: "muted", style: "margin:0 0 16px" }, "Thank you, " + x.name + ". We will confirm by phone or WhatsApp soon."),
+    tattoo && ph ? h("div", { class: "inspo" },
+      h("div", { class: "inspo-h" }, "Send your tattoo inspo"),
+      h("p", null, "Tap the button, then attach your photos or screenshots in WhatsApp (📎 or the camera icon) and send."),
+      h("a", { class: "btn wa", href: waLink(ph, inspoText), target: "_blank", rel: "noopener" }, h("span", { html: WA_SVG }), "Send inspo on WhatsApp")) : null,
     h("table", { class: "t", style: "text-align:left" },
-      h("tr", null, h("td", null, "Service"), h("td", { class: "n" }, x.svc.name)),
+      h("tr", null, h("td", null, x.svcs.length > 1 ? "Services" : "Service"), h("td", { class: "n", style: "white-space:normal" }, x.svcs.map(y => h("div", null, y.name + (y.price > 0 ? " · " + money(y.price) : ""))))),
       h("tr", null, h("td", null, "When"), h("td", { class: "n" }, longDay(x.day) + ", " + x.time)),
-      h("tr", null, h("td", null, "Takes about"), h("td", { class: "n" }, durText(x.svc.duration_min))),
-      x.svc.price > 0 ? h("tr", null, h("td", null, "Price"), h("td", { class: "n" }, money(x.svc.price))) : null,
+      h("tr", null, h("td", null, "Takes about"), h("td", { class: "n" }, durText(mins))),
+      price ? h("tr", null, h("td", null, x.svcs.length > 1 ? "Total" : "Price"), h("td", { class: "n" }, money(fromCents(price)) + (x.svcs.some(y => !(y.price > 0)) ? " + price on request" : ""))) : null,
       h("tr", null, h("td", null, "Reference"), h("td", { class: "n" }, x.ref))),
-    ph ? h("div", { class: "row", style: "margin-top:16px" }, h("a", { class: "btn secondary", href: "tel:" + ph.replace(/[^\d+]/g, "") }, "Call us"), h("a", { class: "btn secondary", href: waLink(ph, "Hello, I just requested an appointment (" + x.ref + ") for " + x.svc.name + " on " + longDay(x.day) + " at " + x.time + "."), target: "_blank", rel: "noopener" }, "WhatsApp us")) : null),
-    h("button", { class: "link", type: "button", onclick: () => { bk.sent = null; bk.svc = null; bk.time = null; slotCache = {}; $("bkNote").value = ""; $("bkDone").hidden = true; showBook(); } }, "Book another appointment"));
+    ph ? h("div", { class: "row", style: "margin-top:16px" }, h("a", { class: "btn secondary", href: "tel:" + ph.replace(/[^\d+]/g, "") }, "Call us"), h("a", { class: "btn secondary", href: waLink(ph, "Hello, I just requested an appointment (" + x.ref + ") for " + bkNames(x.svcs) + " on " + when + "."), target: "_blank", rel: "noopener" }, "WhatsApp us")) : null),
+    h("button", { class: "link", type: "button", onclick: () => { bk.sent = null; bk.svcs = []; bk.time = null; slotCache = {}; $("bkNote").value = ""; $("bkDone").hidden = true; showBook(); } }, "Book another appointment"));
   window.scrollTo(0, 0);
 }
 ["bkName", "bkPhone"].forEach(id => $(id).addEventListener("input", updateBookBar));

@@ -89,7 +89,7 @@ create table if not exists browtech.appointments (
   appt_time    time not null,
   service_id   int references browtech.services(id),
   category     text not null check (category in ('brows','lashes','nails','tattoo','piercing','pony')),
-  service_name text not null,
+  service_name text not null,                               -- several services: "Lash refill + Brow shaping"
   staff_id     int references browtech.users(id),            -- null = anyone
   customer     text not null,
   phone        text,
@@ -98,6 +98,8 @@ create table if not exists browtech.appointments (
 alter table browtech.appointments alter column user_id drop not null;
 alter table browtech.appointments add column if not exists source text not null default 'staff' check (source in ('staff','online'));
 alter table browtech.appointments add column if not exists duration_min int not null default 60;
+-- several services in one booking: [{"id":8,"category":"lashes","name":"Lash refill","price":150,"duration_min":90}, ...]
+alter table browtech.appointments add column if not exists services jsonb;
 alter table browtech.sales drop constraint if exists sales_appt_fk;
 alter table browtech.sales add constraint sales_appt_fk foreign key (appointment_id) references browtech.appointments(id);
 create index if not exists appointments_date on browtech.appointments(appt_date);
@@ -272,6 +274,37 @@ begin
   end if;
 end $$;
 
+-- Several services for one booking. p_ids from the price list (max 6), plus optionally one typed-in service.
+-- p_public: only services that are bookable online.
+create or replace function browtech.pick_services(p_ids int[], p_other_category text, p_other_name text, p_public boolean,
+  out services jsonb, out service_id int, out category text, out service_name text, out duration_min int)
+language plpgsql as $$
+declare ids int[]; s browtech.services; i int; n int := 0;
+begin
+  ids := array(select distinct x from unnest(coalesce(p_ids, '{}')) x where x is not null);
+  services := '[]'::jsonb; duration_min := 0; service_name := '';
+  foreach i in array ids loop
+    select * into s from browtech.services x where x.id = i and x.active and (not p_public or x.online);
+    if not found then raise exception 'A chosen service is not available any more. Please choose again.'; end if;
+    services := services || jsonb_build_object('id', s.id, 'category', s.category, 'name', s.name, 'price', s.price, 'duration_min', s.duration_min);
+    n := n + 1;
+  end loop;
+  if not p_public and coalesce(btrim(p_other_name), '') <> '' then
+    perform browtech.check_category(p_other_category);
+    services := services || jsonb_build_object('id', null, 'category', p_other_category, 'name', left(btrim(p_other_name), 60), 'price', 0, 'duration_min', 60);
+    n := n + 1;
+  end if;
+  if n = 0 then raise exception 'Please choose a service'; end if;
+  if n > 6 then raise exception 'Please choose at most 6 services'; end if;
+  -- keep the price-list order (category, name) so the same choice always reads the same
+  select jsonb_agg(e order by e->>'category' = 'other', e->>'category', e->>'name') into services from jsonb_array_elements(services) e;
+  select (services->0->>'id')::int, services->0->>'category',
+         string_agg(e->>'name', ' + '), sum((e->>'duration_min')::int)
+    into service_id, category, service_name, duration_min
+    from jsonb_array_elements(services) e;
+  service_name := left(service_name, 300);
+end $$;
+
 create or replace function browtech.lock_all() returns void language sql as $$
   select pg_advisory_xact_lock(515151);
 $$;
@@ -395,29 +428,29 @@ language sql stable security definer set search_path = browtech, public as $$
 $$;
 
 -- Free times for one service on one day
-create or replace function public.public_slots(p_service_id int, p_date date) returns json
+drop function if exists public.public_slots(int, date);
+create or replace function public.public_slots(p_service_ids int[], p_date date) returns json
 language plpgsql stable security definer set search_path = browtech, public as $$
-declare s browtech.services; cfg browtech.config;
+declare cfg browtech.config; dur int;
 begin
   select * into cfg from browtech.config where id = 1;
   if not cfg.online_booking then raise exception 'Online booking is switched off at the moment. Please call us.'; end if;
-  select * into s from browtech.services where id = p_service_id and active and online;
-  if not found then raise exception 'Please choose a service'; end if;
+  select duration_min into dur from browtech.pick_services(p_service_ids, null, null, true);
   if p_date is null or p_date < browtech.today() or p_date > browtech.today() + cfg.days_ahead then return '[]'::json; end if;
-  return (select coalesce(json_agg(to_char(t, 'HH24:MI') order by t), '[]') from browtech.free_slots(p_date, s.duration_min, true) t);
+  return (select coalesce(json_agg(to_char(t, 'HH24:MI') order by t), '[]') from browtech.free_slots(p_date, dur, true) t);
 end $$;
 
 -- A customer asks for an appointment. Staff confirm or decline it in the app.
-create or replace function public.public_request(p_service_id int, p_date date, p_time text, p_name text, p_phone text, p_note text, p_website text default null) returns json
+drop function if exists public.public_request(int, date, text, text, text, text, text);
+create or replace function public.public_request(p_service_ids int[], p_date date, p_time text, p_name text, p_phone text, p_note text, p_website text default null) returns json
 language plpgsql security definer set search_path = browtech, public as $$
-declare s browtech.services; cfg browtech.config; t time; digits text; new_id bigint;
+declare sv record; cfg browtech.config; t time; digits text; new_id bigint;
 begin
   -- a hidden form field only robots fill in: pretend it worked, save nothing
   if coalesce(btrim(p_website), '') <> '' then return json_build_object('ok', true, 'ref', 'B0'); end if;
   select * into cfg from browtech.config where id = 1;
   if not cfg.online_booking then raise exception 'Online booking is switched off at the moment. Please call us.'; end if;
-  select * into s from browtech.services where id = p_service_id and active and online;
-  if not found then raise exception 'Please choose a service'; end if;
+  select * into sv from browtech.pick_services(p_service_ids, null, null, true);
   if p_name is null or length(btrim(p_name)) < 2 then raise exception 'Please enter your name'; end if;
   digits := browtech.phone_digits(p_phone);
   if length(digits) < 9 or length(digits) > 15 then raise exception 'Please enter a phone number we can call or WhatsApp'; end if;
@@ -433,11 +466,11 @@ begin
   if (select count(*) from browtech.appointments where source = 'online' and logged_at > now() - interval '1 hour') >= 40 then
     raise exception 'Too many requests right now. Please try again later or call us.';
   end if;
-  if not exists (select 1 from browtech.free_slots(p_date, s.duration_min, true) f where f = t) then
+  if not exists (select 1 from browtech.free_slots(p_date, sv.duration_min, true) f where f = t) then
     raise exception 'Sorry, % is no longer free. Please choose another time.', p_time;
   end if;
-  insert into browtech.appointments(user_id, source, appt_date, appt_time, service_id, category, service_name, staff_id, customer, phone, note, duration_min)
-  values (null, 'online', p_date, t, s.id, s.category, s.name, null, left(btrim(p_name), 80), left(btrim(p_phone), 30), nullif(left(btrim(p_note), 300), ''), s.duration_min)
+  insert into browtech.appointments(user_id, source, appt_date, appt_time, service_id, category, service_name, staff_id, customer, phone, note, duration_min, services)
+  values (null, 'online', p_date, t, sv.service_id, sv.category, sv.service_name, null, left(btrim(p_name), 80), left(btrim(p_phone), 30), nullif(left(btrim(p_note), 300), ''), sv.duration_min, sv.services)
   returning id into new_id;
   return json_build_object('ok', true, 'ref', 'B' || new_id);
 end $$;
@@ -514,13 +547,16 @@ begin
 end $$;
 
 -- Free times for staff booking (opening hours and places; no minimum notice, no booking window)
-create or replace function public.staff_slots(p_token uuid, p_service_id int, p_date date) returns json
+drop function if exists public.staff_slots(uuid, int, date);
+create or replace function public.staff_slots(p_token uuid, p_service_ids int[], p_date date, p_extra_min int default 0) returns json
 language plpgsql stable security definer set search_path = browtech, public as $$
-declare u browtech.users; d int := 60;
+declare u browtech.users; d int;
 begin
   u := browtech.me(p_token);
-  if p_service_id is not null then select duration_min into d from browtech.services where id = p_service_id; end if;
-  return (select coalesce(json_agg(to_char(t, 'HH24:MI') order by t), '[]') from browtech.free_slots(p_date, coalesce(d, 60), false) t);
+  select coalesce(sum(duration_min), 0) into d from browtech.services where id = any(coalesce(p_service_ids, '{}'));
+  d := d + greatest(coalesce(p_extra_min, 0), 0);
+  if d = 0 then d := 60; end if;
+  return (select coalesce(json_agg(to_char(t, 'HH24:MI') order by t), '[]') from browtech.free_slots(p_date, d, false) t);
 end $$;
 
 -- A service was done (with or without a booking).
@@ -550,19 +586,55 @@ begin
   return json_build_object('ok', true, 'id', new_id);
 end $$;
 
-create or replace function public.book_appointment(p_token uuid, p_service_id int, p_category text, p_name text,
-  p_date date, p_time time, p_staff_id int, p_customer text, p_phone text, p_note text) returns json
+-- Several services done for one customer at once (e.g. brows + lashes), one entry per service.
+-- p_items: [{"service_id": 8 | null, "category": "...", "name": "...", "amount": 150, "staff_id": 2}, ...]
+create or replace function public.add_sales(p_token uuid, p_items jsonb, p_payment text, p_date date,
+  p_customer text, p_phone text, p_note text, p_appointment_id bigint) returns json
 language plpgsql security definer set search_path = browtech, public as $$
-declare u browtech.users; s record; new_id bigint;
+declare u browtech.users; it jsonb; s record; a record; amt numeric; pay text; staff int; ids bigint[] := '{}'; new_id bigint;
 begin
   u := browtech.me(p_token);
-  select * into s from browtech.pick_service(p_service_id, p_category, p_name);
+  if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then raise exception 'Choose a service'; end if;
+  if jsonb_array_length(p_items) > 10 then raise exception 'At most 10 services at once'; end if;
+  perform browtech.check_past_date(p_date);
+  if not u.is_admin and p_date <> browtech.today() then raise exception 'Only an admin can enter services for another day'; end if;
+  perform browtech.lock_all();
+  if p_appointment_id is not null then
+    select * into a from browtech.appt_now(p_appointment_id);
+    if a.status = 'done' then raise exception 'This appointment is already marked as done'; end if;
+    if a.status not in ('booked','requested') then raise exception 'This appointment is %', a.status; end if;
+  end if;
+  for it in select * from jsonb_array_elements(p_items) loop
+    select * into s from browtech.pick_service(nullif(it->>'service_id', '')::int, it->>'category', it->>'name');
+    begin amt := (it->>'amount')::numeric; exception when others then raise exception 'Enter the amount for %', s.service_name; end;
+    if amt is null or amt < 0 or amt > 1000000 then raise exception 'Enter the amount for %', s.service_name; end if;
+    staff := nullif(it->>'staff_id', '')::int;
+    perform browtech.check_staff(staff, true);
+    pay := case when amt = 0 then 'free' else p_payment end;
+    if pay is null or pay not in ('cash','momo','card','free') then raise exception 'Choose how the customer paid'; end if;
+    insert into browtech.sales(user_id, staff_id, entry_date, service_id, category, service_name, list_price, amount, payment, customer, phone, note, appointment_id)
+    values (u.id, staff, p_date, s.service_id, s.category, s.service_name, s.price, round(amt, 2), pay,
+            nullif(left(btrim(p_customer), 80), ''), nullif(left(btrim(p_phone), 30), ''), nullif(left(btrim(p_note), 300), ''), p_appointment_id)
+    returning id into new_id;
+    ids := ids || new_id;
+  end loop;
+  return json_build_object('ok', true, 'ids', to_json(ids));
+end $$;
+
+drop function if exists public.book_appointment(uuid, int, text, text, date, time, int, text, text, text);
+create or replace function public.book_appointment(p_token uuid, p_service_ids int[], p_other_category text, p_other_name text,
+  p_date date, p_time time, p_staff_id int, p_customer text, p_phone text, p_note text) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare u browtech.users; sv record; new_id bigint;
+begin
+  u := browtech.me(p_token);
+  select * into sv from browtech.pick_services(p_service_ids, p_other_category, p_other_name, false);
   perform browtech.check_appt_date(p_date, p_time);
   perform browtech.check_staff(p_staff_id, false);
   if p_customer is null or btrim(p_customer) = '' then raise exception 'Enter the customer''s name'; end if;
-  insert into browtech.appointments(user_id, source, appt_date, appt_time, service_id, category, service_name, staff_id, customer, phone, note, duration_min)
-  values (u.id, 'staff', p_date, p_time, s.service_id, s.category, s.service_name, p_staff_id,
-          left(btrim(p_customer), 80), nullif(left(btrim(p_phone), 30), ''), nullif(left(btrim(p_note), 300), ''), s.duration_min)
+  insert into browtech.appointments(user_id, source, appt_date, appt_time, service_id, category, service_name, staff_id, customer, phone, note, duration_min, services)
+  values (u.id, 'staff', p_date, p_time, sv.service_id, sv.category, sv.service_name, p_staff_id,
+          left(btrim(p_customer), 80), nullif(left(btrim(p_phone), 30), ''), nullif(left(btrim(p_note), 300), ''), sv.duration_min, sv.services)
   returning id into new_id;
   return json_build_object('ok', true, 'id', new_id);
 end $$;
@@ -755,7 +827,7 @@ begin
   for f in
     select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.proname in ('public_info','public_slots','public_request','list_users','login','logout','get_state','staff_slots',
-       'add_sale','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','save_settings')
+       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','save_settings')
   loop
     execute format('revoke all on function %s from public', f.sig);
     execute format('grant execute on function %s to anon, authenticated', f.sig);
