@@ -2255,23 +2255,24 @@ const WA_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 const waLink = (phone, text) => "https://wa.me/" + waNumber(phone) + (text ? "?text=" + encodeURIComponent(text) : "");
 // Style ideas per category: free stock photos loaded from Pexels (pexels.com/license), not the shop's own work, and the page says so.
 const GALLERY = {
-  brows: [[18656575, "Defined brows with soft studio makeup"], [17298907, "Sharp brows with gold eye makeup"], [33644901, "Clean arched brows, eyes closed"], [3373735, "Close-up of a natural brow"]],
-  lashes: [[21412169, "Close-up of volume lash extensions"], [20765765, "Defined lashes with pink eye makeup"], [7298696, "Long natural lashes"], [3724431, "Close-up of long lashes in daylight"]],
-  nails: [[13038494, "Classic French tip manicure"], [34997574, "French manicure with gold rings"], [18730147, "Black and gold nail art"], [36207029, "Nails with gold leaf design"]],
+  brows: [["brows-steps.jpg", "Brow shaping, step by step"], ["brows-makeup.jpg", "Sharp brows with soft pink makeup"], [18656575, "Defined brows with soft studio makeup"], [17298907, "Sharp brows with gold eye makeup"], [33644901, "Clean arched brows, eyes closed"], [3373735, "Close-up of a natural brow"]],
+  lashes: [["lashes-volume.jpg", "Full volume lash set"], [21412169, "Close-up of volume lash extensions"], [20765765, "Defined lashes with pink eye makeup"], [7298696, "Long natural lashes"], [3724431, "Close-up of long lashes in daylight"]],
+  nails: [["nails-french.jpg", "Long French tips with a pink shimmer"], [13038494, "Classic French tip manicure"], [34997574, "French manicure with gold rings"], [18730147, "Black and gold nail art"], [36207029, "Nails with gold leaf design"]],
   tattoo: [[40444269, "Fine line wolf and flowers on the upper arm"], [40444050, "Small line tattoo on the forearm"], [7610836, "Shoulder tattoo"], [7901490, "Small triangle tattoo on the hand"]],
-  piercing: [[7400019, "Several ear piercings with an emerald stud"], [15799256, "Ear piercings with elegant jewellery"], [11390512, "Silver hoop earrings"], [7479508, "Small diamond stud"]],
+  piercing: [["piercing-ear.jpg", "Curated ear piercings with sparkling studs and hoops"], [7400019, "Several ear piercings with an emerald stud"], [15799256, "Ear piercings with elegant jewellery"], [11390512, "Silver hoop earrings"], [7479508, "Small diamond stud"]],
   pony: [[6953597, "Long wavy ponytail"], [11204686, "Long, sleek black ponytail"], [11526822, "Long braids"], [37600597, "Long braids, worn down"]],
 };
-const pexelsImg = (id, w) => "https://images.pexels.com/photos/" + id + "/pexels-photo-" + id + ".jpeg?auto=compress&cs=tinysrgb&w=" + w;
+// A file name is one of the owner's images in gallery/; a number is a Pexels photo.
+const galleryImg = (id, w) => typeof id === "string" ? "gallery/" + id : "https://images.pexels.com/photos/" + id + "/pexels-photo-" + id + ".jpeg?auto=compress&cs=tinysrgb&w=" + w;
 let galleryCat = null;
 function renderGallery() {
   if (galleryCat === bk.cat) return; // the strip keeps its scroll position while services are ticked
   galleryCat = bk.cat;
   const photos = GALLERY[bk.cat] || [];
   $("bkGallery").replaceChildren(...(photos.length ? [
-    h("div", { class: "gallery", role: "group", "aria-label": CATS[bk.cat] + " style ideas" }, photos.map(([id, alt]) => h("button", { type: "button", "aria-label": "Show larger: " + alt, onclick: () => sheet(CATS[galleryCat] + " idea", [h("img", { class: "gallery-big", src: pexelsImg(id, 900), alt }), h("p", { class: "gallery-note" }, alt + ". Stock photo from Pexels.")]) },
-      h("img", { src: pexelsImg(id, 300), alt: "", loading: "lazy", width: 112, height: 140 })))),
-    h("p", { class: "gallery-note" }, "Style ideas, not our own work. Photos from Pexels.")
+    h("div", { class: "gallery", role: "group", "aria-label": CATS[bk.cat] + " style ideas" }, photos.map(([id, alt]) => h("button", { type: "button", "aria-label": "Show larger: " + alt, onclick: () => sheet(CATS[galleryCat] + " idea", [h("img", { class: "gallery-big", src: galleryImg(id, 900), alt }), h("p", { class: "gallery-note" }, alt + (typeof id === "string" ? "." : ". Stock photo from Pexels."))]) },
+      h("img", { src: galleryImg(id, 300), alt: "", loading: "lazy", width: 112, height: 140 })))),
+    h("p", { class: "gallery-note" }, "Style ideas. Not all photos are our own work; some are from Pexels.")
   ] : []));
 }
 async function showBook() {
