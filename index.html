@@ -1053,7 +1053,7 @@ function apptRow(st, D) {
         tel ? h("a", { href: "tel:" + tel, onclick: stop, style: "display:inline-block;padding:8px 0;font-size:17px;font-weight:600;color:var(--tint)" }, a.phone) : h("div", { class: "sub" }, "No phone number"),
         ...svcs.map(x => h("div", { class: "sub" }, h("span", { class: "key", style: "background:var(--c-" + (CATS[x.category] ? x.category : "other") + ")" }), x.name + (x.price > 0 ? " · " + money(x.price) : ""))),
         h("div", { class: "ttl", style: "margin-top:6px" }, tot ? "Total " + money(fromCents(tot)) + (svcs.some(x => !(x.price > 0)) ? " +" : "") : "Price on request"),
-        h("div", { class: "sub" }, "With " + staffName(D, st.staff) + (a.note ? " · " + a.note : "")),
+        st.staff || a.note ? h("div", { class: "sub" }, [st.staff ? "With " + staffName(D, st.staff) : "", a.note].filter(Boolean).join(" · ")) : null,
         st.sale ? h("div", { class: "sub" }, st.sale.amount !== undefined ? "Paid " + money(st.sale.amount) + " · " + PAY[st.sale.payment] : "Done by " + (D.userName[st.sale.staff_id] || "?")) : null,
         h("div", { class: "row", style: "margin-top:8px", onclick: stop },
           st.status === "booked" ? h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: () => saleFormSheet({ appt: st }) }, "Done") : null,
@@ -1349,7 +1349,6 @@ function bookSheet(presetTime) {
   const days = staffDays();
   const date = h("input", { id: "bDate", type: "date", value: days.includes(apptDay) ? apptDay : days[0] || today(), min: today(), max: days[days.length - 1] });
   const time = h("input", { id: "bTime", type: "time", step: 300, value: presetTime || (date.value > today() ? "10:00" : nextSlot()) });
-  const staff = staffSelect("bStaff", null, true);
   const note = h("input", { id: "bNote", autocomplete: "off", placeholder: "Optional" });
   const free = h("div", { class: "slots", style: "margin:0 0 14px" });
   function renderList() {
@@ -1390,7 +1389,6 @@ function bookSheet(presetTime) {
       h("div", { class: "rowf" }, h("label", { for: "bTime" }, "Time"), time)),
     free,
     h("div", { class: "rows" },
-      h("div", { class: "rowf" }, h("label", { for: "bStaff" }, "With"), staff),
       h("div", { class: "rowf" }, h("label", { for: "bNote" }, "Note"), note))
   ], "Book", async () => {
     if (!cust.value.trim()) { nudge(cust); throw new Error("Enter the customer's name"); }
@@ -1401,7 +1399,7 @@ function bookSheet(presetTime) {
     if (!days.includes(date.value)) throw new Error(STAFF_DAYS_ERR);
     if (!/^\d{2}:\d{2}/.test(time.value)) throw new Error("Choose the time");
     const r = await call("book_appointment", { p_service_ids: chosen.map(x => x.id), p_other_category: other ? other.cat.value : null, p_other_name: other ? other.nm.value.trim() : null,
-      p_date: date.value, p_time: time.value, p_staff_id: staff.value ? +staff.value : null, p_customer: cust.value, p_phone: phone.value, p_note: note.value });
+      p_date: date.value, p_time: time.value, p_staff_id: null, p_customer: cust.value, p_phone: phone.value, p_note: note.value });
     apptDay = date.value;
     await sync();
     toast("Booked · " + relDay(date.value) + " " + time.value, 6000, "Undo", () => quickUndo("appointment", r.id));
