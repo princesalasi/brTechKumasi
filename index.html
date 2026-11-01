@@ -510,11 +510,14 @@ details.f[open] > summary { margin-bottom: 12px; }
       <div class="section-h" id="reqHead"><span id="reqTitle">New requests</span></div>
       <div class="group" id="reqList"></div>
     </div>
-    <div class="section-h" id="apptHead"><span id="apptTitle">Appointments</span></div>
+    <div class="section-h" id="apptHead"><span id="apptTitle">Available</span></div>
     <div class="days" id="dayStrip"></div>
+    <div class="slots" id="apptSlots"></div>
+
+    <div class="section-h"><span id="upcomingTitle">Upcoming</span></div>
     <div class="group" id="apptList"></div>
 
-    <div class="section-h"><span id="recentTitle">Recent services</span><button type="button" id="seeAll">See all</button></div>
+    <div class="section-h"><span id="recentTitle">Completed services</span><button type="button" id="seeAll">See all</button></div>
     <div class="group" id="recent"></div>
     </div>
   </section>
@@ -948,11 +951,13 @@ function renderToday(D) {
   renderDays(D);
   renderApptList(D);
   const rc = $("recent"); rc.innerHTML = "";
-  const mine = admin ? db.sales.slice(-5).reverse() : db.sales.filter(s => s.entry_date === t && s.user_id === session.user.id).reverse();
-  $("recentTitle").textContent = admin ? "Recent services" : "My entries today";
+  // today's services; workers only receive their own amounts, so bookings others finished show as appointment rows
+  const mine = db.sales.filter(s => s.entry_date === t && (admin || s.user_id === session.user.id)).reverse();
+  const others = Object.values(D.appt).filter(st => st.status === "done" && st.date === t && st.sale && st.sale.amount === undefined);
   $("seeAll").hidden = !admin;
-  if (!mine.length) rc.append(h("div", { class: "empty" }, admin ? "No services entered yet." : "You haven't entered a service today."));
+  if (!mine.length && !others.length) rc.append(h("div", { class: "empty" }, "No completed services today."));
   mine.forEach(s => rc.append(saleEl(s, D, { tap: true, meta: false })));
+  others.forEach(st => rc.append(apptRow(st, D)));
 }
 function requestRow(st, D) {
   const a = st.a;
@@ -995,24 +1000,56 @@ function renderDays(D) {
   strip.scrollLeft = prevScroll;
 }
 function renderApptList(D) {
-  $("apptTitle").textContent = "Appointments · " + relDay(apptDay);
+  $("apptTitle").textContent = "Available · " + relDay(apptDay);
+  $("upcomingTitle").textContent = "Upcoming · " + relDay(apptDay);
+  loadApptSlots();
   const box = $("apptList"); box.innerHTML = "";
-  const list = Object.values(D.appt).filter(st => st.date === apptDay && st.status !== "undone" && st.status !== "declined")
+  // requests have their own section above; finished services are under Completed services
+  const list = Object.values(D.appt).filter(st => st.date === apptDay && !["undone", "declined", "requested", "done"].includes(st.status))
     .sort((a, b) => a.time.localeCompare(b.time) || a.a.id - b.a.id);
-  if (!list.length) { box.append(h("div", { class: "empty" }, "No appointments " + (apptDay === today() ? "today" : "on this day") + ".")); return; }
+  if (!list.length) { box.append(h("div", { class: "empty" }, "No upcoming appointments " + (apptDay === today() ? "today" : "on this day") + ".")); return; }
   list.forEach(st => box.append(apptRow(st, D)));
 }
+// Free times of the chosen day, for a one-hour appointment. Tap one to book it.
+let slotsKey = null, slotsTicket = 0;
+async function loadApptSlots() {
+  const key = apptDay + "|" + db.synced;
+  if ($("modeAppt").hidden || key === slotsKey) return;
+  slotsKey = key;
+  const my = ++slotsTicket, box = $("apptSlots"), day = apptDay;
+  const note = t => h("p", { class: "hint slotnote", style: "margin:0 4px" }, t);
+  if (!staffDays().includes(day)) { box.replaceChildren(note("Appointments can't be booked on this day.")); return; }
+  if (!box.children.length) box.replaceChildren(note("Looking for free times…"));
+  try {
+    const list = await call("staff_slots", { p_service_ids: [], p_date: day, p_extra_min: 0 });
+    if (my !== slotsTicket) return;
+    box.replaceChildren(...(list.length ? list.map(t => h("button", { class: "slot needs-net", type: "button", disabled: !online, onclick: () => bookSheet(t) }, t)) : [note("No free times on this day.")]));
+  } catch (e) { if (my === slotsTicket) { slotsKey = null; box.replaceChildren(note(e.message)); } }
+}
+const apptOpen = new Set();
+const CHEVRON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
 function apptRow(st, D) {
-  const a = st.a, off = st.status === "cancelled" || st.status === "no-show";
-  if (st.status === "requested") return requestRow(st, D);
-  return h("div", { class: "entry tap" + (off ? " dim" : ""), onclick: () => apptSheet(a.id) },
+  const a = st.a, off = st.status === "cancelled" || st.status === "no-show", open = apptOpen.has(a.id);
+  const toggle = () => { if (open) apptOpen.delete(a.id); else apptOpen.add(a.id); render(); };
+  const stop = e => e.stopPropagation();
+  const svcs = apptServices(a), tot = svcs.reduce((t, x) => t + cents(x.price || 0), 0), tel = (a.phone || "").replace(/[^\d+]/g, "");
+  return h("div", { class: "entry tap" + (off ? " dim" : ""), role: "button", tabindex: "0", "aria-expanded": String(open), onclick: toggle,
+      onkeydown: e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } } },
     h("div", { class: "time" }, st.time),
     h("div", { class: "main" },
       h("div", { class: "ttl" }, a.customer, st.status !== "booked" ? statusTag(st) : null),
-      h("div", { class: "sub" }, h("span", { class: "key", style: "background:var(--c-" + (CATS[a.category] ? a.category : "other") + ")" }), a.service_name + " · " + staffName(D, st.staff)),
-      a.phone || a.note ? h("div", { class: "sub" }, [a.phone, a.note].filter(Boolean).join(" · ")) : null,
-      st.sale && st.sale.amount !== undefined ? h("div", { class: "sub" }, "Paid " + money(st.sale.amount) + " · " + PAY[st.sale.payment]) : st.sale ? h("div", { class: "sub" }, "Done by " + (D.userName[st.sale.staff_id] || "?")) : null),
-    st.status === "booked" ? h("div", { class: "side" }, h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); saleFormSheet({ appt: st }); } }, "Done")) : null);
+      open ? [
+        tel ? h("a", { href: "tel:" + tel, onclick: stop, style: "display:inline-block;padding:8px 0;font-size:17px;font-weight:600;color:var(--tint)" }, a.phone) : h("div", { class: "sub" }, "No phone number"),
+        ...svcs.map(x => h("div", { class: "sub" }, h("span", { class: "key", style: "background:var(--c-" + (CATS[x.category] ? x.category : "other") + ")" }), x.name + (x.price > 0 ? " · " + money(x.price) : ""))),
+        h("div", { class: "ttl", style: "margin-top:6px" }, tot ? "Total " + money(fromCents(tot)) + (svcs.some(x => !(x.price > 0)) ? " +" : "") : "Price on request"),
+        h("div", { class: "sub" }, "With " + staffName(D, st.staff) + (a.note ? " · " + a.note : "")),
+        st.sale ? h("div", { class: "sub" }, st.sale.amount !== undefined ? "Paid " + money(st.sale.amount) + " · " + PAY[st.sale.payment] : "Done by " + (D.userName[st.sale.staff_id] || "?")) : null,
+        h("div", { class: "row", style: "margin-top:8px", onclick: stop },
+          st.status === "booked" ? h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: () => saleFormSheet({ appt: st }) }, "Done") : null,
+          st.status === "booked" ? h("button", { class: "btn small danger needs-net", type: "button", disabled: !online, onclick: () => statusSheet(st, "cancelled") }, "Cancel") : null,
+          h("button", { class: "btn small secondary", type: "button", onclick: () => apptSheet(a.id) }, "More"))
+      ] : null),
+    h("div", { class: "side", style: "color:var(--text3);" + (open ? "transform:rotate(180deg)" : ""), html: CHEVRON }));
 }
 function todaySheet() {
   const D = derive(), t = today();
@@ -1173,6 +1210,7 @@ function setMode(m) {
   setSwitch($("modeSwitch"), m);
   $("modeWalkin").hidden = m !== "walkin";
   $("modeAppt").hidden = m !== "appt";
+  if (m === "appt") loadApptSlots();
 }
 function initSwitch(sw, set) {
   const thumb = sw.querySelector(".thumb"), [left, right] = [...sw.querySelectorAll("button")].map(b => b.dataset.mode);
@@ -1291,7 +1329,7 @@ async function walkinPay() {
 
 /* ---------- booking sheet (several services) ---------- */
 function nextSlot() { const [H, M] = nowHM().split(":").map(Number); let m = H * 60 + M + 30; m = Math.ceil(m / 30) * 30; if (m >= 24 * 60) m = 9 * 60; return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
-function bookSheet() {
+function bookSheet(presetTime) {
   const cust = h("input", { id: "bCust", autocomplete: "off" });
   const phone = h("input", { id: "bPhone", type: "tel", autocomplete: "off", placeholder: "Optional" });
   const chosen = []; let other = null;
@@ -1299,7 +1337,7 @@ function bookSheet() {
   const addWrap = h("div", { class: "field" });
   const days = staffDays();
   const date = h("input", { id: "bDate", type: "date", value: days.includes(apptDay) ? apptDay : days[0] || today(), min: today(), max: days[days.length - 1] });
-  const time = h("input", { id: "bTime", type: "time", step: 300, value: date.value > today() ? "10:00" : nextSlot() });
+  const time = h("input", { id: "bTime", type: "time", step: 300, value: presetTime || (date.value > today() ? "10:00" : nextSlot()) });
   const staff = staffSelect("bStaff", null, true);
   const note = h("input", { id: "bNote", autocomplete: "off", placeholder: "Optional" });
   const free = h("div", { class: "slots", style: "margin:0 0 14px" });
@@ -2340,7 +2378,7 @@ function startApp() {
 
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 $("btnSale").onclick = () => saleFormSheet();
-$("btnBook").onclick = bookSheet;
+$("btnBook").onclick = () => bookSheet();
 $("wkPay").onclick = walkinPay;
 initSwitch($("modeSwitch"), setMode);
 initSwitch($("wkPaySwitch"), m => setSwitch($("wkPaySwitch"), m));
