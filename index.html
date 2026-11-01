@@ -95,7 +95,11 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 .order-row .ln { flex: 1; min-width: 0; }
 .order-row .grip { flex: none; color: var(--text3); font-size: 20px; line-height: 1; }
 .order-row.dim .ln { color: var(--text3); }
-.order-row.dragging { z-index: 2; cursor: grabbing; background: var(--card); box-shadow: 0 6px 20px rgba(0,0,0,.22); }
+.order-row.dragging, .order-cat.dragging { z-index: 2; cursor: grabbing; background: var(--card); box-shadow: 0 6px 20px rgba(0,0,0,.22); }
+.order-cat { position: relative; border-radius: 10px; background: var(--bg); margin-top: 6px; }
+.order-head { font-weight: 700; }
+.order-head .key { flex: none; }
+.order-svc { padding-left: 28px; }
 .mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--fill); border-radius: 12px; padding: 3px; margin: 12px 0 14px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
 .mode .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform 260ms cubic-bezier(.3,1.25,.5,1); }
 @media (prefers-color-scheme: dark) { .mode .thumb { background: #4a4652; } }
@@ -654,7 +658,9 @@ const $ = id => document.getElementById(id);
 const LS_SESSION = "browtech.session.v1", LS_CACHE = "browtech.cache.v1", LS_PREFS = "browtech.prefs.v1";
 const TZ = "Africa/Accra"; // all days and times are Kumasi time, wherever the phone is
 const CATS = { pony: "Pony", piercing: "Piercing", brows: "Brows", tattoo: "Tattoo", lashes: "Lashes", nails: "Nails" };
-const CAT_KEYS = Object.keys(CATS);
+let CAT_KEYS = Object.keys(CATS);
+// The admin's order of the main services; any category it doesn't name goes last.
+function setCatOrder(order) { const all = Object.keys(CATS); CAT_KEYS = (order || []).filter(c => all.includes(c)).concat(all.filter(c => !(order || []).includes(c))); }
 const PAY = { cash: "Cash", momo: "MoMo", card: "Card / bank", free: "Free" };
 const STATUS = { requested: "Request", booked: "Booked", done: "Done", declined: "Declined", cancelled: "Cancelled", "no-show": "No-show", undone: "Undone" };
 const isAdmin = () => !!(session && session.user && session.user.is_admin);
@@ -665,6 +671,7 @@ function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch 
 let session = load(LS_SESSION, null);
 let prefs = Object.assign({}, load(LS_PREFS, {}));
 let db = load(LS_CACHE, null) || emptyDb();
+if (db.config) setCatOrder(db.config.category_order);
 function emptyDb() { return { me: null, users: [], services: [], config: null, sales: [], apptDone: [], appts: [], changes: [], undos: [], events: [], reset: null, synced: null }; }
 
 function h(tag, props, ...kids) {
@@ -803,7 +810,7 @@ async function sync(full) {
         s = await rpc("get_state", args());
         setTimeout(() => toast("Test entries were cleared – fresh start"), 300);
       }
-      db.me = s.me; db.users = s.users; db.services = s.services; db.reset = s.reset_count; db.config = s.config; db.apptDone = s.appt_done || [];
+      db.me = s.me; db.users = s.users; db.services = s.services; db.reset = s.reset_count; db.config = s.config; db.apptDone = s.appt_done || []; setCatOrder(s.config && s.config.category_order);
       db.sales = db.sales.concat(s.sales); db.appts = db.appts.concat(s.appointments);
       db.changes = db.changes.concat(s.changes); db.undos = db.undos.concat(s.undos);
       db.events = db.events.concat(s.events);
@@ -1909,21 +1916,24 @@ function priceTable(editable) {
   });
   return box;
 }
-// Order within each category; customers and staff see the services in this order.
+// Order of the main services and of the services within each; customers and staff see them in this order.
 function reorderSheet() {
   const lists = CAT_KEYS.map(c => ({ c, svcs: db.services.filter(s => s.category === c) })).filter(l => l.svcs.length);
-  const box = h("div", null, lists.flatMap(({ c, svcs }) => [
-    h("div", { class: "lbl", style: "margin-top:12px" }, h("span", { class: "key", style: "background:var(--c-" + c + ")" }), CATS[c]),
-    h("div", { class: "order-list" }, svcs.map(s => dragRow(h("div", { class: "order-row" + (s.active ? "" : " dim"), "data-id": s.id, tabindex: 0, "aria-label": s.name + ". Use the up and down arrow keys to move it." },
-      h("span", { class: "ln" }, s.name), h("span", { class: "grip", "aria-hidden": "true" }, "≡")))))
-  ]));
-  sheet("Rearrange services", [h("p", { class: "small muted", style: "margin:-6px 4px 4px" }, "Hold a service, then drag it up or down. Customers and staff see the services in this order."), box], "Save", async () => {
-    await call("reorder_services", { p_ids: [...box.querySelectorAll(".order-row")].map(r => +r.dataset.id) });
+  const box = h("div", { class: "order-list" }, lists.map(({ c, svcs }) => {
+    const head = h("div", { class: "order-row order-head", tabindex: 0, "aria-label": CATS[c] + ". Use the up and down arrow keys to move it." },
+      h("span", { class: "key", style: "background:var(--c-" + c + ")" }), h("span", { class: "ln" }, CATS[c]), h("span", { class: "grip", "aria-hidden": "true" }, "≡"));
+    return dragRow(h("div", { class: "order-cat", "data-cat": c }, head,
+      h("div", { class: "order-list" }, svcs.map(s => { const row = h("div", { class: "order-row order-svc" + (s.active ? "" : " dim"), "data-id": s.id, tabindex: 0, "aria-label": s.name + ". Use the up and down arrow keys to move it." },
+        h("span", { class: "ln" }, s.name), h("span", { class: "grip", "aria-hidden": "true" }, "≡")); return dragRow(row, row); }))), head);
+  }));
+  sheet("Rearrange services", [h("p", { class: "small muted", style: "margin:-6px 4px 4px" }, "Hold a main service or a service under it, then drag it up or down. Customers and staff see them in this order."), box], "Save", async () => {
+    const shown = [...box.children].map(el => el.dataset.cat);
+    await call("reorder_services", { p_ids: [...box.querySelectorAll(".order-svc")].map(r => +r.dataset.id), p_categories: shown.concat(CAT_KEYS.filter(c => !shown.includes(c))) });
     await sync(); toast("Order saved");
   }, { focus: false });
 }
-// Hold (touch) or press (mouse), then drag within its list. The dragged row stays in place in the DOM and its neighbours move, so the pointer capture survives.
-function dragRow(row) {
+// Hold (touch) or press (mouse) the handle, then drag the row within its list. The dragged row stays in place in the DOM and its neighbours move, so the pointer capture survives.
+function dragRow(row, handle) {
   let timer = null, dragging = false, y0 = 0, x0 = 0, y = 0, top0 = 0, scroll0 = 0, scroller = null;
   const glide = (sib, from) => { if (!REDUCED) sib.animate([{ transform: "translateY(" + (from - sib.offsetTop) + "px)" }, { transform: "none" }], { duration: 180, easing: "cubic-bezier(.32,.72,0,1)" }); };
   const swap = (sib, before) => { const from = sib.offsetTop; row.parentNode.insertBefore(sib, before); glide(sib, from); };
@@ -1954,21 +1964,21 @@ function dragRow(row) {
     row.style.transform = "";
     if (!REDUCED && off) row.animate([{ transform: "translateY(" + off + "px)" }, { transform: "none" }], { duration: 180, easing: "cubic-bezier(.32,.72,0,1)" });
   };
-  row.addEventListener("pointerdown", e => {
+  handle.addEventListener("pointerdown", e => {
     if (e.button) return;
     y0 = y = e.clientY; x0 = e.clientX;
-    try { row.setPointerCapture(e.pointerId); } catch (err) {}
+    try { handle.setPointerCapture(e.pointerId); } catch (err) {}
     if (e.pointerType === "mouse") begin(); else timer = setTimeout(begin, 250);
   });
-  row.addEventListener("pointermove", e => {
+  handle.addEventListener("pointermove", e => {
     y = e.clientY;
     if (dragging) place();
     if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > 8) { clearTimeout(timer); timer = null; } // moved before the hold ended: it's a scroll
   });
-  row.addEventListener("pointerup", stop); row.addEventListener("pointercancel", stop);
-  row.addEventListener("touchmove", e => { if (dragging) e.preventDefault(); }, { passive: false }); // keep the page from scrolling during a drag
-  row.addEventListener("contextmenu", e => e.preventDefault());
-  row.addEventListener("keydown", e => {
+  handle.addEventListener("pointerup", stop); handle.addEventListener("pointercancel", stop);
+  handle.addEventListener("touchmove", e => { if (dragging) e.preventDefault(); }, { passive: false }); // keep the page from scrolling during a drag
+  handle.addEventListener("contextmenu", e => e.preventDefault());
+  handle.addEventListener("keydown", e => {
     const p = row.previousElementSibling, n = row.nextElementSibling;
     if (e.key === "ArrowUp" && p) { e.preventDefault(); swap(p, row.nextSibling); }
     if (e.key === "ArrowDown" && n) { e.preventDefault(); swap(n, row); }
@@ -2240,6 +2250,7 @@ async function showBook() {
   if (bk.sent) return;
   try {
     bk.info = await rpc("public_info", {});
+    setCatOrder(bk.info.category_order);
     $("bkLoading").hidden = true;
     if (!bk.info.online_booking || !bk.info.services.length) {
       const ph = bk.info.contact_phone;

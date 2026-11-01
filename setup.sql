@@ -160,6 +160,7 @@ create table if not exists browtech.config (
   hours            jsonb not null default '{"0":null,"1":["09:00","19:00"],"2":["09:00","19:00"],"3":["09:00","19:00"],"4":["09:00","19:00"],"5":["09:00","19:00"],"6":["09:00","19:00"]}'
 );
 insert into browtech.config(id) values (1) on conflict do nothing;
+alter table browtech.config add column if not exists category_order text[];  -- admin's order of the main services
 
 -- Starter price list – only on the very first run (prices 0 = not set yet)
 do $$
@@ -440,7 +441,7 @@ create or replace function public.public_info() returns json
 language sql stable security definer set search_path = browtech, public as $$
   select json_build_object(
     'online_booking', c.online_booking, 'contact_phone', c.contact_phone, 'days_ahead', c.days_ahead,
-    'hours', c.hours, 'today', browtech.today(),
+    'hours', c.hours, 'today', browtech.today(), 'category_order', c.category_order,
     'services', (select coalesce(json_agg(json_build_object('id', s.id, 'category', s.category, 'name', s.name, 'price', s.price, 'duration_min', s.duration_min) order by s.category, s.sort_order nulls last, s.name), '[]')
                    from browtech.services s where s.active and s.online))
     from browtech.config c where c.id = 1;
@@ -818,14 +819,17 @@ begin
   return json_build_object('ok', true, 'changed', true);
 end $$;
 
--- Price list: the order services are shown in (ids in the wanted order).
-create or replace function public.reorder_services(p_token uuid, p_ids int[]) returns json
+-- Price list: the order categories and services are shown in (categories and ids in the wanted order).
+drop function if exists public.reorder_services(uuid, int[]);
+create or replace function public.reorder_services(p_token uuid, p_ids int[], p_categories text[]) returns json
 language plpgsql security definer set search_path = browtech, public as $$
-declare u browtech.users;
+declare u browtech.users; c text;
 begin
   u := browtech.me(p_token); perform browtech.need_admin(u);
   if p_ids is null or cardinality(p_ids) = 0 then raise exception 'Nothing to rearrange'; end if;
+  foreach c in array coalesce(p_categories, '{}') loop perform browtech.check_category(c); end loop;
   update browtech.services s set sort_order = o.pos from unnest(p_ids) with ordinality as o(id, pos) where s.id = o.id;
+  update browtech.config set category_order = p_categories where id = 1;
   insert into browtech.events(user_id, action, details) values (u.id, 'price list', 'Services rearranged');
   return json_build_object('ok', true);
 end $$;
