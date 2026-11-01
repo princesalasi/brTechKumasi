@@ -9,7 +9,7 @@
 <link rel="manifest" id="manifestLink" href="manifest-book.webmanifest">
 <script>
   // Staff area (#staff) installs as the staff app; the main link is the customer booking page.
-  if (location.hash === "#staff") document.getElementById("manifestLink").href = "manifest.webmanifest";
+  if (location.hash.startsWith("#staff")) document.getElementById("manifestLink").href = "manifest.webmanifest";
 </script>
 <link rel="icon" href="btk-icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="btk-apple-touch-icon.png">
@@ -301,6 +301,9 @@ table.t tr.total td { font-weight: 600; }
 #toast button { border: 0; background: none; color: #ffc1df; font-weight: 600; font-size: 15px; padding: 2px 0; cursor: pointer; }
 
 /* ---------- charts ---------- */
+.chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.chart-head h2 { margin: 0; }
+.chart-head .seg button { min-width: 56px; padding: 6px 10px; font-size: 14px; }
 .chart-wrap { position: relative; }
 .chart-wrap svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
 .chart-wrap .axis text { fill: var(--text2); font-size: 11px; }
@@ -603,7 +606,7 @@ details.f[open] > summary { margin-bottom: 12px; }
     <div id="trendsEmpty" class="card empty" hidden>No services or appointments in this period yet.</div>
     <div id="trendsBody">
       <div class="tiles" id="tTiles"></div>
-      <div class="card"><h2>Income</h2><div class="chart-wrap" id="chIncome"></div></div>
+      <div class="card"><div class="chart-head"><h2>Income</h2><div id="incomeType"></div></div><div class="chart-wrap" id="chIncome"></div></div>
       <div class="card"><h2>Services done</h2><div class="chart-wrap" id="chCount"></div></div>
       <div class="card"><h2>By category</h2><div id="tCats"></div></div>
       <div class="card"><h2>By staff</h2><div id="tStaff"></div></div>
@@ -1700,6 +1703,8 @@ function bucketTitle(key, step) {
   return "Week " + key.split("-W")[1] + ", " + key.split("-W")[0];
 }
 let lastTrend = null;
+let incomeChart = "bar"; // remembered on this device
+try { if (localStorage.getItem("browtech.incomeChart") === "line") incomeChart = "line"; } catch (e) {}
 function renderTrends(D) {
   const per = $("tPeriod").value, step = $("tStep").value;
   let end = today(), start;
@@ -1728,7 +1733,7 @@ function renderTrends(D) {
   sales.forEach(s => { const i = idx[bucketKey(s.entry_date, step)]; if (i === undefined) return; inc[i] += cents(s.amount); cnt[i]++; });
   const total = sales.reduce((a, s) => a + cents(s.amount), 0);
   const labels = keys.map(k => bucketLabel(k, step)), titles = keys.map(k => bucketTitle(k, step));
-  drawChart($("chIncome"), { type: "bar", labels, titles, series: [{ name: "Income (GH₵)", color: "var(--money)", values: inc.map(fromCents) }], fmt: v => money(v), aria: "Income" });
+  drawChart($("chIncome"), { type: incomeChart, labels, titles, series: [{ name: "Income (GH₵)", color: "var(--money)", values: inc.map(fromCents) }], fmt: v => money(v), aria: "Income" });
   drawChart($("chCount"), { type: "bar", labels, titles, series: [{ name: "Services", color: "var(--c-lashes)", values: cnt }], fmt: v => nf.format(v) + (v === 1 ? " service" : " services"), aria: "Services done" });
   // tiles
   const noShow = appts.filter(st => st.status === "no-show").length;
@@ -1802,7 +1807,7 @@ function drawChart(wrap, o) {
   } else {
     o.series.forEach(s => {
       sv("path", { d: s.values.map((v, i) => (i ? "L" : "M") + x(i) + "," + y(v)).join(""), fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
-      if (n <= 40) s.values.forEach((v, i) => sv("circle", { cx: x(i), cy: y(v), r: 3.5, fill: s.color, stroke: "var(--card)", "stroke-width": 2 }, svg));
+      s.values.forEach((v, i) => sv("circle", { cx: x(i), cy: y(v), r: n <= 40 ? 3.5 : 2, fill: s.color, stroke: "var(--card)", "stroke-width": n <= 40 ? 2 : 1 }, svg));
     });
   }
   const cross = sv("line", { y1: m.t, y2: m.t + ih, stroke: "var(--muted)", "stroke-dasharray": "3 3", visibility: "hidden" }, svg);
@@ -1812,7 +1817,7 @@ function drawChart(wrap, o) {
     const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * (W / r.width);
     const i = Math.max(0, Math.min(n - 1, Math.floor((px - m.l) / band)));
     tip.innerHTML = "";
-    tip.append(h("div", { class: "h" }, o.titles[i]), o.series.map(s => h("div", { class: "r" }, h("i", { style: "background:" + s.color }), h("strong", null, o.fmt(s.values[i])))));
+    tip.append(h("div", { class: "h" }, o.titles[i]), ...o.series.map(s => h("div", { class: "r" }, h("i", { style: "background:" + s.color }), h("strong", null, o.fmt(s.values[i])))));
     tip.hidden = false;
     marks.forEach((g, j) => g && g.forEach(p => p.setAttribute("opacity", j === i ? 1 : .5)));
     if (o.type === "line") { cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible"); }
@@ -2386,7 +2391,7 @@ async function sendBooking() {
   try {
     const r = await rpc("public_request", { p_service_ids: bk.svcs.map(x => x.id), p_date: bk.day, p_time: bk.time, p_name: $("bkName").value, p_phone: $("bkPhone").value, p_note: $("bkNote").value, p_website: $("bkWebsite").value });
     haptic();
-    bk.sent = { ref: r.ref, svcs: bk.svcs.slice(), day: bk.day, time: bk.time, name: $("bkName").value.trim() };
+    bk.sent = { ref: r.ref, svcs: bk.svcs.slice(), day: bk.day, time: bk.time, name: $("bkName").value.trim(), phone: $("bkPhone").value.trim() };
     showBookDone();
   } catch (e) {
     $("bkErr").textContent = e.message; $("bkErr").hidden = false;
@@ -2398,7 +2403,9 @@ function showBookDone() {
   const x = bk.sent, ph = bk.info.contact_phone, tattoo = hasTattoo(x.svcs);
   const price = x.svcs.reduce((t, y) => t + cents(y.price), 0), mins = x.svcs.reduce((t, y) => t + y.duration_min, 0);
   const when = longDay(x.day) + " at " + x.time;
-  const inspoText = "Hello BrowTech Kumasi, this is " + x.name + ". Here is my tattoo inspiration for my request " + x.ref + " (" + bkNames(x.svcs) + ", " + when + "):";
+  const staffLink = bookLink() + "#staff/" + x.ref.slice(1); // opens this request in the staff app
+  const requestText = "New booking request " + x.ref + "\nName: " + x.name + "\nPhone: " + x.phone + "\nService: " + bkNames(x.svcs) + "\nWhen: " + when + "\n\nOpen to confirm:\n" + staffLink;
+  const inspoText = "Hello BrowTech Kumasi, this is " + x.name + ". Here is my tattoo inspiration for my request " + x.ref + " (" + bkNames(x.svcs) + ", " + when + "). Phone: " + x.phone + "\n\nOpen to confirm:\n" + staffLink;
   $("bkForm").hidden = true; $("bookbar").hidden = true; $("bkDone").hidden = false;
   $("bkDone").replaceChildren(h("div", { class: "card donecard" },
     h("div", { class: "big", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>' }),
@@ -2408,13 +2415,17 @@ function showBookDone() {
       h("div", { class: "inspo-h" }, "Send your tattoo inspo"),
       h("p", null, "Tap the button, then attach your photos or screenshots in WhatsApp (📎 or the camera icon) and send."),
       h("a", { class: "btn wa", href: waLink(ph, inspoText), target: "_blank", rel: "noopener" }, h("span", { html: WA_SVG }), "Send inspo on WhatsApp")) : null,
+    !tattoo && ph ? h("div", { class: "inspo" },
+      h("div", { class: "inspo-h" }, "Last step: tell us on WhatsApp"),
+      h("p", null, "Tap the button, then tap send in WhatsApp, so we see your request right away."),
+      h("a", { class: "btn wa", href: waLink(ph, requestText), target: "_blank", rel: "noopener" }, h("span", { html: WA_SVG }), "Send request on WhatsApp")) : null,
     h("table", { class: "t", style: "text-align:left" },
       h("tr", null, h("td", null, x.svcs.length > 1 ? "Services" : "Service"), h("td", { class: "n", style: "white-space:normal" }, x.svcs.map(y => h("div", null, y.name + (y.price > 0 ? " · " + money(y.price) : ""))))),
       h("tr", null, h("td", null, "When"), h("td", { class: "n" }, longDay(x.day) + ", " + x.time)),
       h("tr", null, h("td", null, "Takes about"), h("td", { class: "n" }, durText(mins))),
       price ? h("tr", null, h("td", null, x.svcs.length > 1 ? "Total" : "Price"), h("td", { class: "n" }, money(fromCents(price)) + (x.svcs.some(y => !(y.price > 0)) ? " + price on request" : ""))) : null,
       h("tr", null, h("td", null, "Reference"), h("td", { class: "n" }, x.ref))),
-    ph ? h("div", { class: "row", style: "margin-top:16px" }, h("a", { class: "btn secondary", href: "tel:" + ph.replace(/[^\d+]/g, "") }, "Call us"), h("a", { class: "btn secondary", href: waLink(ph, "Hello, I just requested an appointment (" + x.ref + ") for " + bkNames(x.svcs) + " on " + when + "."), target: "_blank", rel: "noopener" }, "WhatsApp us")) : null),
+    ph ? h("div", { class: "row", style: "margin-top:16px" }, h("a", { class: "btn secondary", href: "tel:" + ph.replace(/[^\d+]/g, "") }, "Call us")) : null),
     h("button", { class: "link", type: "button", onclick: () => { bk.sent = null; bk.svcs = []; bk.time = null; slotCache = {}; $("bkNote").value = ""; $("bkDone").hidden = true; showBook(); } }, "Book another appointment"));
   window.scrollTo(0, 0);
 }
@@ -2423,7 +2434,10 @@ $("bkSend").onclick = sendBooking;
 
 /* ================= which page: customer booking (default) or staff (#staff) ================= */
 const staffMode = () => location.hash === "#staff";
+let linkedAppt = null; // from a WhatsApp link (#staff/123): opened once the data has loaded, after login if needed
 function route() {
+  const m = location.hash.match(/^#staff\/(\d+)$/);
+  if (m) { linkedAppt = +m[1]; history.replaceState(null, "", "#staff"); }
   document.querySelectorAll(".viewSwitch").forEach(sw => setSwitch(sw, staffMode() ? "staff" : "client"));
   $("manifestLink").href = staffMode() ? "manifest.webmanifest" : "manifest-book.webmanifest";
   document.querySelectorAll(".sheet, .scrim").forEach(w => w.remove());
@@ -2524,11 +2538,16 @@ function checkSessionAge() {
   return true;
 }
 let lastDay = null;
+function openLinkedAppt() {
+  const id = linkedAppt; linkedAppt = null;
+  if (!id || !session) return;
+  if (derive().appt[id]) apptSheet(id); else toast("Appointment B" + id + " not found");
+}
 function startApp() {
   if (checkSessionAge()) return;
   $("login").hidden = true; $("book").hidden = true; $("bookbar").hidden = true; $("app").hidden = false;
   apptDay = today(); lastDay = today();
-  render(); sync();
+  render(); sync().then(openLinkedAppt);
   clearInterval(pollTimer);
   pollTimer = setInterval(() => {
     if (lastDay !== today()) { lastDay = today(); apptDay = today(); shownMoney = undefined; }
@@ -2539,6 +2558,12 @@ function startApp() {
 
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 $("btnBook").onclick = () => bookSheet();
+$("incomeType").append(seg({ bar: "Bars", line: "Line" }, incomeChart, v => {
+  if (v === incomeChart) return;
+  incomeChart = v;
+  try { localStorage.setItem("browtech.incomeChart", v); } catch (e) {}
+  render();
+}));
 $("wkPay").onclick = walkinPay;
 $("wkDisc").addEventListener("input", updateWalkinPay);
 initSwitch($("modeSwitch"), setMode);
