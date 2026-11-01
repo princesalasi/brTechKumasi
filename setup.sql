@@ -416,6 +416,15 @@ end $$;
 -- Customer booking page (no login)
 -- =====================================================================
 
+-- Customers can book the next 3 days the shop is open, starting tomorrow
+create or replace function browtech.bookable_days() returns setof date
+language sql stable as $$
+  select d::date
+    from browtech.config c, generate_series((browtech.today() + 1)::timestamp, (browtech.today() + 14)::timestamp, interval '1 day') d
+   where c.id = 1 and jsonb_typeof(c.hours -> extract(dow from d)::int::text) = 'array'
+   order by d limit 3;
+$$;
+
 -- Services, prices and opening hours for the booking page
 create or replace function public.public_info() returns json
 language sql stable security definer set search_path = browtech, public as $$
@@ -436,7 +445,7 @@ begin
   select * into cfg from browtech.config where id = 1;
   if not cfg.online_booking then raise exception 'Online booking is switched off at the moment. Please call us.'; end if;
   select duration_min into dur from browtech.pick_services(p_service_ids, null, null, true);
-  if p_date is null or p_date < browtech.today() or p_date > browtech.today() + cfg.days_ahead then return '[]'::json; end if;
+  if p_date is null or p_date not in (select browtech.bookable_days()) then return '[]'::json; end if;
   return (select coalesce(json_agg(to_char(t, 'HH24:MI') order by t), '[]') from browtech.free_slots(p_date, dur, true) t);
 end $$;
 
@@ -456,7 +465,7 @@ begin
   if length(digits) < 9 or length(digits) > 15 then raise exception 'Please enter a phone number we can call or WhatsApp'; end if;
   if p_time is null or p_time !~ '^\d{2}:\d{2}$' then raise exception 'Please choose a time'; end if;
   t := p_time::time;
-  if p_date is null or p_date < browtech.today() or p_date > browtech.today() + cfg.days_ahead then raise exception 'Please choose another day'; end if;
+  if p_date is null or p_date not in (select browtech.bookable_days()) then raise exception 'Please choose another day'; end if;
   perform browtech.lock_all();
   -- limits against mistakes and abuse
   if (select count(*) from browtech.appointments a cross join lateral browtech.appt_now(a.id) n

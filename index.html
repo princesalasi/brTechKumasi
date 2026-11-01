@@ -1751,7 +1751,7 @@ function cfgSummary() {
     DAYS.map(([d, n]) => { const x = c.hours[String(d)]; return h("tr", null, h("td", null, n), h("td", { class: "n" + (x ? "" : " muted") }, x ? x[0] + " – " + x[1] : "Closed")); }),
     h("tr", null, h("td", null, "Customers at the same time"), h("td", { class: "n" }, c.capacity)),
     h("tr", null, h("td", null, "Times offered every"), h("td", { class: "n" }, c.slot_minutes + " min")),
-    h("tr", null, h("td", null, "Book up to"), h("td", { class: "n" }, c.days_ahead + " days ahead")),
+    h("tr", null, h("td", null, "Book up to"), h("td", { class: "n" }, "next 3 working days")),
     h("tr", null, h("td", null, "Minimum notice"), h("td", { class: "n" }, c.min_notice_hours ? c.min_notice_hours + " h" : "none")),
     h("tr", null, h("td", null, "WhatsApp number"), h("td", { class: "n" + (c.contact_phone ? "" : " neg") }, c.contact_phone || "not set – needed for tattoo inspo")));
 }
@@ -1772,7 +1772,6 @@ function settingsSheet() {
   });
   const cap = opts(h("select", { id: "sCap" }), [1,2,3,4,5,6,8,10].map(v => [v, v + (v === 1 ? " customer" : " customers")]), c.capacity);
   const slot = opts(h("select", { id: "sSlot" }), [15,20,30,45,60].map(v => [v, "every " + v + " min"]), c.slot_minutes);
-  const days = opts(h("select", { id: "sDays" }), [7,14,21,30,45,60,90].map(v => [v, v + " days ahead"]), c.days_ahead);
   const notice = opts(h("select", { id: "sNotice" }), [[0, "none"], [1, "1 hour"], [2, "2 hours"], [3, "3 hours"], [6, "6 hours"], [12, "12 hours"], [24, "1 day"], [48, "2 days"]], c.min_notice_hours);
   const phone = h("input", { id: "sPh", type: "tel", autocomplete: "off", value: c.contact_phone || "", placeholder: "e.g. 024 123 4567" });
   sheet("Booking settings", [
@@ -1782,7 +1781,6 @@ function settingsSheet() {
     h("div", { class: "rows" },
       h("div", { class: "rowf" }, h("label", { for: "sCap" }, "At the same time"), cap),
       h("div", { class: "rowf" }, h("label", { for: "sSlot" }, "Times offered"), slot),
-      h("div", { class: "rowf" }, h("label", { for: "sDays" }, "Book up to"), days),
       h("div", { class: "rowf" }, h("label", { for: "sNotice" }, "Min. notice"), notice),
       h("div", { class: "rowf" }, h("label", { for: "sPh" }, "WhatsApp number"), phone)),
     h("p", { class: "hint" }, "“At the same time” = how many customers can be served together. A time is only offered if there is still a free place for the whole length of all chosen services."),
@@ -1790,7 +1788,7 @@ function settingsSheet() {
   ], "Save", async () => {
     const hours = {};
     rows.forEach(r => { hours[r.d] = r.chk.checked ? [r.from.value.slice(0, 5), r.to.value.slice(0, 5)] : null; if (r.chk.checked && !(r.from.value < r.to.value)) throw new Error("Check the hours: opening must be before closing"); });
-    await call("save_settings", { p_online: onl === "on", p_slot: +slot.value, p_capacity: +cap.value, p_days: +days.value, p_notice: +notice.value, p_phone: phone.value, p_hours: hours });
+    await call("save_settings", { p_online: onl === "on", p_slot: +slot.value, p_capacity: +cap.value, p_days: c.days_ahead, p_notice: +notice.value, p_phone: phone.value, p_hours: hours });
     await sync(); toast("Booking settings saved");
   }, { focus: false });
 }
@@ -2094,8 +2092,9 @@ async function showBook() {
   }
 }
 function openDays() {
+  // the next 3 days the shop is open, starting tomorrow (same rule as browtech.bookable_days)
   const out = [], t = bk.info.today;
-  for (let i = 0; i <= bk.info.days_ahead; i++) {
+  for (let i = 1; i <= 14 && out.length < 3; i++) {
     const d = addDays(t, i), hrs = bk.info.hours[String(fromISO(d).getDay())];
     if (hrs) out.push(d);
   }
