@@ -89,6 +89,7 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 #wkChosen { margin-top: 12px; }
 #wkExtra { margin: 12px 0 0; }
 #wkExtra:empty { display: none; }
+#wkDiscRow { margin: 12px 0; }
 .mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--fill); border-radius: 12px; padding: 3px; margin: 12px 0 14px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
 .mode .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform 260ms cubic-bezier(.3,1.25,.5,1); }
 @media (prefers-color-scheme: dark) { .mode .thumb { background: #4a4652; } }
@@ -488,6 +489,7 @@ details.f[open] > summary { margin-bottom: 12px; }
       <div id="wkPayArea" hidden>
         <div class="chips" id="wkChosen"></div>
         <div class="lines" id="wkExtra"></div>
+        <div class="rows" id="wkDiscRow"><div class="rowf"><label for="wkDisc">Discount GH₵</label><input id="wkDisc" inputmode="decimal" autocomplete="off" placeholder="Optional"></div></div>
         <div class="mode" id="wkPaySwitch" role="radiogroup" aria-label="Paid with" data-mode="cash">
           <span class="thumb"></span>
           <button type="button" role="radio" data-mode="cash" aria-checked="true">Cash</button>
@@ -696,6 +698,15 @@ const money = v => "GH₵ " + (Math.round(v * 100) % 100 ? nf2 : nf).format(v);
 const moneyPlain = v => (Math.round(v * 100) % 100 ? nf2 : nf).format(v);
 const cents = v => Math.round(Number(v) * 100);           // sum in whole pesewas to avoid rounding drift
 const fromCents = c => c / 100;
+// Discount on the whole payment, in pesewas (empty = none). Each entry is reduced in proportion to its amount, so the entries still add up exactly.
+const readDiscount = inp => inp.value.trim() ? cents(readMoney(inp)) : 0;
+function applyDiscount(items, disc) {
+  const tot = items.reduce((t, x) => t + cents(x.amount), 0);
+  if (disc > tot) throw new Error("The discount is more than the total");
+  let left = disc, base = tot;
+  items.forEach(x => { const c = cents(x.amount), off = base ? Math.round(left * c / base) : 0; x.amount = fromCents(c - off); left -= off; base -= c; });
+}
+const discountNote = disc => disc ? "Discount " + money(fromCents(disc)) + " on the total" : "";
 function readMoney(inp) {
   const s = inp.value.trim().replace(/\s/g, "").replace(",", ".");
   if (!/^\d+(\.\d{1,2})?$/.test(s)) throw new Error("Enter the amount, e.g. 150 or 150.50");
@@ -998,16 +1009,21 @@ function renderDays(D) {
   const days = [t].concat(staffDays().filter(d => d !== t));
   if (!days.includes(apptDay)) days.unshift(apptDay);
   const prevScroll = strip.scrollLeft;
-  strip.innerHTML = "";
+  // the date picker stays in place, so the 30-second sync doesn't close it while it is open
+  strip.querySelectorAll("button.daychip").forEach(b => b.remove());
+  let pickChip = strip.querySelector(".pick");
+  if (!pickChip) {
+    const pick = h("input", { type: "date", "aria-label": "Pick another date", onclick: () => { try { pick.showPicker(); } catch (e) {} }, onchange: e => { if (e.target.value) { apptDay = e.target.value; render(); } } });
+    pickChip = h("label", { class: "daychip pick" }, "Other", h("span", null, "date"), pick);
+    strip.append(pickChip);
+  }
   days.forEach(d => {
     const dt = fromISO(d);
-    strip.append(h("button", { class: "daychip press", type: "button", "aria-pressed": String(d === apptDay), "aria-label": longDay(d) + ", " + (count[d] || 0) + " appointments", onclick: () => { apptDay = d; renderDays(derive()); renderApptList(derive()); } },
+    strip.insertBefore(h("button", { class: "daychip press", type: "button", "aria-pressed": String(d === apptDay), "aria-label": longDay(d) + ", " + (count[d] || 0) + " appointments", onclick: () => { apptDay = d; renderDays(derive()); renderApptList(derive()); } },
       h("span", { class: "dw" }, d === t ? "Today" : dt.toLocaleDateString("en-GB", { weekday: "short" })),
       h("span", { class: "dn" }, dt.getDate()),
-      h("span", { class: "dc" }, count[d] ? count[d] + " appt" : "")));
+      h("span", { class: "dc" }, count[d] ? count[d] + " appt" : "")), pickChip);
   });
-  const pick = h("input", { type: "date", "aria-label": "Pick another date", onchange: e => { if (e.target.value) { apptDay = e.target.value; render(); } } });
-  strip.append(h("label", { class: "daychip pick" }, "Other", h("span", null, "date"), pick));
   strip.scrollLeft = prevScroll;
 }
 function renderApptList(D) {
@@ -1127,6 +1143,9 @@ function saleFormSheet(opts) {
   const paySeg = seg({ cash: "Cash", momo: "MoMo", card: "Card / bank" }, pay, v => { pay = v; });
   const payBlk = h("div", { class: "blk" }, h("span", { class: "lbl" }, "Paid with"), paySeg);
   const addWrap = h("div", { class: "field" });
+  const discInp = h("input", { id: "sDisc", inputmode: "decimal", autocomplete: "off", placeholder: "Optional" });
+  discInp.addEventListener("input", () => upd());
+  const discField = field("Discount GH₵", discInp);
   function addLine(svc) {
     const k = ++n, other = !svc.id;
     const amt = h("input", { id: "lAmt" + k, inputmode: "decimal", autocomplete: "off", placeholder: "0", value: svc.price > 0 ? String(svc.price) : "", "aria-label": "Amount for " + (svc.name || "service") });
@@ -1166,9 +1185,12 @@ function saleFormSheet(opts) {
       l.hint.textContent = lp !== null ? (v !== null && cents(v) !== cents(lp) ? "Price list " + money(lp) + " · changed for this customer" : "Price list " + money(lp)) : l.svc.id ? "No price on the list yet" : "";
       l.hint.hidden = !l.hint.textContent;
     });
-    totalEl.hidden = lines.length < 2;
-    totalEl.replaceChildren(h("span", null, "Total · " + lines.length + " services"), h("b", null, ok ? money(fromCents(tot)) : "–"));
-    payBlk.hidden = lines.length > 0 && ok && tot === 0;
+    let disc = 0;
+    try { disc = readDiscount(discInp); if (disc > tot) ok = false; } catch (e) { ok = false; }
+    discField.hidden = !lines.length;
+    totalEl.hidden = lines.length < 2 && !disc;
+    totalEl.replaceChildren(h("span", null, disc ? "Total after discount" : "Total · " + lines.length + " services"), h("b", null, ok ? money(fromCents(tot - disc)) : "–"));
+    payBlk.hidden = lines.length > 0 && ok && tot - disc === 0;
     if (!lines.length) renderAdd();
   }
   (a ? apptServices(a) : []).forEach(x => addLine(x.id ? (svcFromList(x.id) || x) : x));
@@ -1179,7 +1201,7 @@ function saleFormSheet(opts) {
   const note = h("input", { id: "sNote", autocomplete: "off", placeholder: "Optional" });
   const s = sheet(a ? "Done: " + a.customer : "Service done", [
     a ? h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, "Appointment " + relDay(st.date) + " " + st.time + " · " + a.service_name + ". Change amounts or add/remove services if needed.") : null,
-    box, addWrap, totalEl,
+    box, addWrap, discField, totalEl,
     payBlk,
     h("div", { class: "rows" },
       isAdmin() ? h("div", { class: "rowf" }, h("label", { for: "sDate" }, "Date"), date) : null,
@@ -1199,7 +1221,9 @@ function saleFormSheet(opts) {
       return { service_id: l.svc.id || null, category: l.o ? l.o.cat.value : null, name: l.o ? l.o.nm.value.trim() : null, amount: v, staff_id: +l.staff.value };
     });
     if (!date.value) throw new Error("Choose the date");
-    const r = await call("add_sales", { p_items: items, p_payment: pay, p_date: date.value, p_customer: cust.value, p_phone: phone.value, p_note: note.value, p_appointment_id: a ? a.id : null });
+    let disc; try { disc = readDiscount(discInp); applyDiscount(items, disc); } catch (e) { nudge(discInp); throw e; }
+    tot -= disc;
+    const r = await call("add_sales", { p_items: items, p_payment: pay, p_date: date.value, p_customer: cust.value, p_phone: phone.value, p_note: [note.value.trim(), discountNote(disc)].filter(Boolean).join(" · "), p_appointment_id: a ? a.id : null });
     await sync();
     toast("Saved · " + money(fromCents(tot)) + (items.length > 1 ? " · " + items.length + " services" : ""), 6000, "Undo", () => quickUndoMany("sale", r.ids));
   }, { focus: false });
@@ -1285,6 +1309,7 @@ function renderWalkin(D) {
     row(wk.other, () => { wk.other = !wk.other; render(); }, "Other service (type it)", 0));
   const chosen = wk.ids.map(svcFromList);
   $("wkPayArea").hidden = !chosen.length && !wk.other;
+  if ($("wkPayArea").hidden) $("wkDisc").value = "";
   $("wkChosen").replaceChildren(...chosen.map(x => h("button", { class: "chip", type: "button", "aria-label": "Remove " + x.name, onclick: () => { wk.ids = wk.ids.filter(id => id !== x.id); render(); } },
     h("i", { style: "background:var(--c-" + x.category + ")" }), x.name, h("span", { class: "cx", html: X_BTN }))));
   renderWalkinExtra(chosen);
@@ -1315,6 +1340,7 @@ function updateWalkinPay() {
   const inputs = wk.ids.map(svcFromList).filter(x => !(x.price > 0)).map(x => wk.amts[x.id]).concat(wk.other ? [wk.amts.Other] : []);
   let tot = wk.ids.reduce((a, id) => a + cents(svcFromList(id).price || 0), 0), ok = true;
   inputs.forEach(i => { try { tot += cents(readMoney(i)); } catch (e) { ok = false; } });
+  try { const disc = readDiscount($("wkDisc")); if (disc > tot) ok = false; tot -= disc; } catch (e) { ok = false; }
   $("wkPay").textContent = "Pay" + (ok ? " · " + money(fromCents(tot)) : "");
 }
 async function walkinPay() {
@@ -1328,9 +1354,12 @@ async function walkinPay() {
       if (!wk.o.nm.value.trim()) { nudge(wk.o.nm); throw new Error("Type the name of the other service"); }
       items.push({ service_id: null, category: wk.o.cat.value, name: wk.o.nm.value.trim(), amount: amount(wk.amts.Other, wk.o.nm.value.trim()), staff_id: session.user.id });
     }
+    let disc; try { disc = readDiscount($("wkDisc")); applyDiscount(items, disc); } catch (e) { nudge($("wkDisc")); throw e; }
+    tot -= disc;
     wk.busy = true; $("wkPay").disabled = true;
-    const r = await call("add_sales", { p_items: items, p_payment: $("wkPaySwitch").dataset.mode, p_date: today(), p_customer: "", p_phone: "", p_note: "", p_appointment_id: null });
+    const r = await call("add_sales", { p_items: items, p_payment: $("wkPaySwitch").dataset.mode, p_date: today(), p_customer: "", p_phone: "", p_note: discountNote(disc), p_appointment_id: null });
     Object.assign(wk, { ids: [], other: false, amts: {}, o: null, extraKey: "" });
+    $("wkDisc").value = "";
     setSwitch($("wkPaySwitch"), "cash");
     haptic(); await sync(); render();
     toast("Paid · " + money(fromCents(tot)) + (items.length > 1 ? " · " + items.length + " services" : ""), 6000, "Undo", () => quickUndoMany("sale", r.ids));
@@ -2388,6 +2417,7 @@ function startApp() {
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 $("btnBook").onclick = () => bookSheet();
 $("wkPay").onclick = walkinPay;
+$("wkDisc").addEventListener("input", updateWalkinPay);
 initSwitch($("modeSwitch"), setMode);
 initSwitch($("wkPaySwitch"), m => setSwitch($("wkPaySwitch"), m));
 $("cardIncome").onclick = () => { if (isAdmin()) todaySheet(); else if (!$("reqArea").hidden) $("reqHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); else toast("No requests waiting"); };
