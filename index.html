@@ -85,13 +85,15 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 
 /* ---------- big actions ---------- */
 .ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-.wk-next { position: sticky; bottom: calc(62px + env(safe-area-inset-bottom)); z-index: 5; width: 100%; margin-top: 12px; box-shadow: var(--shadow); }
-.wk-next[hidden] { display: none; }
+.wk-pay { width: 100%; }
+#wkChosen { margin-top: 12px; }
+#wkExtra { margin: 12px 0 0; }
+#wkExtra:empty { display: none; }
 .mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--fill); border-radius: 12px; padding: 3px; margin: 12px 0 14px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
 .mode .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform 260ms cubic-bezier(.3,1.25,.5,1); }
 @media (prefers-color-scheme: dark) { .mode .thumb { background: #4a4652; } }
 @media (prefers-reduced-motion: reduce) { .mode .thumb { transition: none; } }
-.mode[data-mode="appt"] .thumb { transform: translateX(100%); }
+.mode[data-mode="appt"] .thumb, .mode[data-mode="momo"] .thumb { transform: translateX(100%); }
 .mode.drag { cursor: grabbing; }
 .mode.drag .thumb { transition: none; }
 .mode button { position: relative; min-height: 44px; border: 0; background: none; font-size: 15px; font-weight: 500; color: var(--text2); cursor: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; letter-spacing: 0; }
@@ -471,7 +473,16 @@ details.f[open] > summary { margin-bottom: 12px; }
     <div id="modeWalkin">
       <div class="pills" id="wkCats" role="group" aria-label="Category"></div>
       <div class="group" id="wkServices" role="group" aria-label="Services – you can choose several"></div>
-      <button class="op main press needs-net wk-next" id="wkNext" type="button" hidden></button>
+      <div id="wkPayArea" hidden>
+        <div class="chips" id="wkChosen"></div>
+        <div class="lines" id="wkExtra"></div>
+        <div class="mode" id="wkPaySwitch" role="radiogroup" aria-label="Paid with" data-mode="cash">
+          <span class="thumb"></span>
+          <button type="button" role="radio" data-mode="cash" aria-checked="true">Cash</button>
+          <button type="button" role="radio" data-mode="momo" aria-checked="false" tabindex="-1">MoMo</button>
+        </div>
+        <button class="op main press needs-net wk-pay" id="wkPay" type="button"></button>
+      </div>
       <div class="section-h"><span id="wkTitle">Walk-ins today</span></div>
       <div class="group" id="wkRecent"></div>
     </div>
@@ -1057,7 +1068,7 @@ function saleFormSheet(opts) {
   const box = h("div", { class: "lines" });
   const totalEl = h("div", { class: "total" });
   let pay = "cash";
-  const paySeg = seg(opts.walkin ? { cash: "Cash", momo: "MoMo" } : { cash: "Cash", momo: "MoMo", card: "Card / bank" }, pay, v => { pay = v; });
+  const paySeg = seg({ cash: "Cash", momo: "MoMo", card: "Card / bank" }, pay, v => { pay = v; });
   const payBlk = h("div", { class: "blk" }, h("span", { class: "lbl" }, "Paid with"), paySeg);
   const addWrap = h("div", { class: "field" });
   function addLine(svc) {
@@ -1104,7 +1115,7 @@ function saleFormSheet(opts) {
     payBlk.hidden = lines.length > 0 && ok && tot === 0;
     if (!lines.length) renderAdd();
   }
-  (a ? apptServices(a) : opts.services || []).forEach(x => addLine(x.id ? (svcFromList(x.id) || x) : x));
+  (a ? apptServices(a) : []).forEach(x => addLine(x.id ? (svcFromList(x.id) || x) : x));
   renderAdd(); upd();
   const date = h("input", { id: "sDate", type: "date", value: today(), max: today() });
   const cust = h("input", { id: "sCust", autocomplete: "off", placeholder: "Optional", value: a ? a.customer : "" });
@@ -1119,7 +1130,7 @@ function saleFormSheet(opts) {
       h("div", { class: "rowf" }, h("label", { for: "sCust" }, "Customer"), cust),
       h("div", { class: "rowf" }, h("label", { for: "sPhone" }, "Phone"), phone),
       h("div", { class: "rowf" }, h("label", { for: "sNote" }, "Note"), note))
-  ], opts.walkin ? "Paid" : "Save", async () => {
+  ], "Save", async () => {
     if (!lines.length) { nudge(addWrap.querySelector("select")); throw new Error("Choose a service"); }
     let tot = 0;
     const items = lines.map(l => {
@@ -1134,7 +1145,6 @@ function saleFormSheet(opts) {
     if (!date.value) throw new Error("Choose the date");
     const r = await call("add_sales", { p_items: items, p_payment: pay, p_date: date.value, p_customer: cust.value, p_phone: phone.value, p_note: note.value, p_appointment_id: a ? a.id : null });
     await sync();
-    if (opts.onSaved) opts.onSaved();
     toast("Saved · " + money(fromCents(tot)) + (items.length > 1 ? " · " + items.length + " services" : ""), 6000, "Undo", () => quickUndoMany("sale", r.ids));
   }, { focus: false });
   return s;
@@ -1146,18 +1156,21 @@ async function quickUndoMany(target, ids) {
   } catch (e) { await sync(); toast(e.message, 4500); }
 }
 
-/* ---------- walk-in / appointments switch: tap, drag the thumb, or arrow keys ---------- */
+/* ---------- two-way switches (walk-in / appointments, cash / momo): tap, drag the thumb, or arrow keys ---------- */
+function setSwitch(sw, m) {
+  sw.dataset.mode = m;
+  sw.querySelectorAll("button").forEach(b => { const on = b.dataset.mode === m; b.setAttribute("aria-checked", String(on)); b.tabIndex = on ? 0 : -1; });
+}
 function setMode(m) {
-  $("modeSwitch").dataset.mode = m;
-  $("modeSwitch").querySelectorAll("button").forEach(b => { const on = b.dataset.mode === m; b.setAttribute("aria-checked", String(on)); b.tabIndex = on ? 0 : -1; });
+  setSwitch($("modeSwitch"), m);
   $("modeWalkin").hidden = m !== "walkin";
   $("modeAppt").hidden = m !== "appt";
 }
-function initModeSwitch() {
-  const sw = $("modeSwitch"), thumb = $("modeThumb");
+function initSwitch(sw, set) {
+  const thumb = sw.querySelector(".thumb"), [left, right] = [...sw.querySelectorAll("button")].map(b => b.dataset.mode);
   let drag = null, justDragged = false;
   sw.addEventListener("pointerdown", e => {
-    drag = { x: e.clientX, id: e.pointerId, from: sw.dataset.mode === "appt" ? thumb.offsetWidth : 0, on: false, pos: 0 };
+    drag = { x: e.clientX, id: e.pointerId, from: sw.dataset.mode === right ? thumb.offsetWidth : 0, on: false, pos: 0 };
   });
   sw.addEventListener("pointermove", e => {
     if (!drag || e.pointerId !== drag.id) return;
@@ -1176,25 +1189,25 @@ function initModeSwitch() {
     sw.classList.remove("drag"); thumb.style.transform = "";
     justDragged = true; setTimeout(() => { justDragged = false; }, 0);
     if (e.type === "pointercancel") return;
-    const m = d.pos > thumb.offsetWidth / 2 ? "appt" : "walkin";
-    if (m !== sw.dataset.mode) { setMode(m); haptic(); }
+    const m = d.pos > thumb.offsetWidth / 2 ? right : left;
+    if (m !== sw.dataset.mode) { set(m); haptic(); }
   };
   sw.addEventListener("pointerup", end);
   sw.addEventListener("pointercancel", end);
   sw.addEventListener("click", e => {
     const b = e.target.closest("button");
-    if (b && !justDragged) setMode(b.dataset.mode);
+    if (b && !justDragged) set(b.dataset.mode);
   });
   sw.addEventListener("keydown", e => {
     if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
     e.preventDefault();
-    setMode(e.key === "ArrowLeft" || e.key === "ArrowUp" ? "walkin" : "appt");
+    set(e.key === "ArrowLeft" || e.key === "ArrowUp" ? left : right);
     sw.querySelector('[aria-checked="true"]').focus();
   });
 }
 
-/* ---------- walk-in: tap the services, then the "service done" sheet ---------- */
-const wk = { cat: null, ids: [], other: false };
+/* ---------- walk-in: tap the services, choose cash or momo, pay ---------- */
+const wk = { cat: null, ids: [], other: false, amts: {}, o: null, extraKey: "", busy: false };
 function renderWalkin(D) {
   const svcs = db.services.filter(s => s.active);
   wk.ids = wk.ids.filter(id => svcs.some(s => s.id === id));
@@ -1213,19 +1226,59 @@ function renderWalkin(D) {
       render();
     }, s.name, s.price)),
     row(wk.other, () => { wk.other = !wk.other; render(); }, "Other service (type it)", 0));
-  const n = wk.ids.length + (wk.other ? 1 : 0);
-  const tot = wk.ids.reduce((a, id) => a + cents(svcFromList(id).price || 0), 0);
-  $("wkNext").hidden = !n;
-  $("wkNext").textContent = "Next · " + n + (n === 1 ? " service" : " services") + (tot ? " · " + money(fromCents(tot)) : "");
+  const chosen = wk.ids.map(svcFromList);
+  $("wkPayArea").hidden = !chosen.length && !wk.other;
+  $("wkChosen").replaceChildren(...chosen.map(x => h("button", { class: "chip", type: "button", "aria-label": "Remove " + x.name, onclick: () => { wk.ids = wk.ids.filter(id => id !== x.id); render(); } },
+    h("i", { style: "background:var(--c-" + x.category + ")" }), x.name, h("span", { class: "cx", html: X_BTN }))));
+  renderWalkinExtra(chosen);
+  updateWalkinPay();
   const t = today();
   const list = db.sales.filter(s => s.entry_date === t && !s.appointment_id && (isAdmin() || s.user_id === session.user.id)).reverse();
   $("wkTitle").textContent = isAdmin() ? "Walk-ins today" : "My walk-ins today";
   $("wkRecent").replaceChildren(...(list.length ? list.map(s => saleEl(s, D, { undo: true })) : [h("div", { class: "empty" }, "None yet")]));
 }
-function walkinNext() {
-  const services = wk.ids.map(svcFromList);
-  if (wk.other) services.push({ id: null, category: "", name: "", price: 0, duration_min: 60 });
-  saleFormSheet({ walkin: true, services, onSaved: () => { wk.ids = []; wk.other = false; render(); } });
+// A service with no price on the list and "Other" need typing in. Built only when the set changes, so the 30-second sync doesn't interrupt typing.
+function wkAmt(k, name) {
+  if (!wk.amts[k]) { wk.amts[k] = h("input", { id: "wkAmt" + k, inputmode: "decimal", autocomplete: "off", placeholder: "0", "aria-label": "Amount for " + name }); wk.amts[k].addEventListener("input", updateWalkinPay); }
+  return wk.amts[k];
+}
+function renderWalkinExtra(chosen) {
+  const need = chosen.filter(x => !(x.price > 0));
+  const key = need.map(x => x.id).join() + "|" + wk.other;
+  if (key === wk.extraKey) return;
+  wk.extraKey = key;
+  const rows = need.map(x => h("div", { class: "line" }, h("div", { class: "lh" }, h("span", { class: "key", style: "background:var(--c-" + x.category + ")" }), h("span", { class: "ln" }, x.name)), field("Amount GH₵", wkAmt(x.id, x.name))));
+  if (wk.other) {
+    wk.o = wk.o || otherInputs("wkO");
+    rows.push(h("div", { class: "line" }, h("div", { class: "lh" }, h("span", { class: "ln" }, "Other service")), h("div", { class: "grid2" }, field("Category", wk.o.cat), field("Name", wk.o.nm)), field("Amount GH₵", wkAmt("Other", "other service"))));
+  }
+  $("wkExtra").replaceChildren(...rows);
+}
+function updateWalkinPay() {
+  const inputs = wk.ids.map(svcFromList).filter(x => !(x.price > 0)).map(x => wk.amts[x.id]).concat(wk.other ? [wk.amts.Other] : []);
+  let tot = wk.ids.reduce((a, id) => a + cents(svcFromList(id).price || 0), 0), ok = true;
+  inputs.forEach(i => { try { tot += cents(readMoney(i)); } catch (e) { ok = false; } });
+  $("wkPay").textContent = "Pay" + (ok ? " · " + money(fromCents(tot)) : "");
+}
+async function walkinPay() {
+  if (wk.busy) return;
+  try {
+    let tot = 0;
+    const amount = (input, name) => { let v; try { v = readMoney(input); } catch (e) { nudge(input); throw new Error("Enter the amount for " + name); } tot += cents(v); return v; };
+    const items = wk.ids.map(svcFromList).map(x => ({ service_id: x.id, category: null, name: null, amount: x.price > 0 ? (tot += cents(x.price), x.price) : amount(wk.amts[x.id], x.name), staff_id: session.user.id }));
+    if (wk.other) {
+      if (!wk.o.cat.value) { nudge(wk.o.cat); throw new Error("Choose the category of the other service"); }
+      if (!wk.o.nm.value.trim()) { nudge(wk.o.nm); throw new Error("Type the name of the other service"); }
+      items.push({ service_id: null, category: wk.o.cat.value, name: wk.o.nm.value.trim(), amount: amount(wk.amts.Other, wk.o.nm.value.trim()), staff_id: session.user.id });
+    }
+    wk.busy = true; $("wkPay").disabled = true;
+    const r = await call("add_sales", { p_items: items, p_payment: $("wkPaySwitch").dataset.mode, p_date: today(), p_customer: "", p_phone: "", p_note: "", p_appointment_id: null });
+    Object.assign(wk, { ids: [], other: false, amts: {}, o: null, extraKey: "" });
+    setSwitch($("wkPaySwitch"), "cash");
+    haptic(); await sync(); render();
+    toast("Paid · " + money(fromCents(tot)) + (items.length > 1 ? " · " + items.length + " services" : ""), 6000, "Undo", () => quickUndoMany("sale", r.ids));
+  } catch (e) { toast(e.message, 4500); }
+  finally { wk.busy = false; $("wkPay").disabled = !online; }
 }
 
 /* ---------- booking sheet (several services) ---------- */
@@ -2277,8 +2330,9 @@ function startApp() {
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 $("btnSale").onclick = () => saleFormSheet();
 $("btnBook").onclick = bookSheet;
-$("wkNext").onclick = walkinNext;
-initModeSwitch();
+$("wkPay").onclick = walkinPay;
+initSwitch($("modeSwitch"), setMode);
+initSwitch($("wkPaySwitch"), m => setSwitch($("wkPaySwitch"), m));
 $("cardIncome").onclick = () => { if (isAdmin()) todaySheet(); else if (!$("reqArea").hidden) $("reqHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); else toast("No requests waiting"); };
 $("cardAppts").onclick = () => { apptDay = today(); render(); $("apptHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); };
 $("seeAll").onclick = () => showTab("history");
