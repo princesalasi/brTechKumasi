@@ -81,7 +81,7 @@ When you have finished trying things out, run `tools/clear_test_entries.sql` onc
 | `config.js` | Supabase URL and public key |
 | `setup.sql` | Database setup – run once in Supabase |
 | `tools/clear_test_entries.sql` | Optional one-time fresh start after testing |
-| `sw.js`, `manifest.webmanifest` (staff app), `manifest-book.webmanifest` (booking page), `icon-*.png`, `apple-touch-icon.png`, `logo.svg` | Home-screen app, logo and offline support |
+| `sw.js`, `manifest.webmanifest` (staff app), `manifest-book.webmanifest` (booking page), `btk-icon-*.png`, `btk-apple-touch-icon.png` | Home-screen app, logo and offline support |
 | `.github/workflows/keep-awake.yml` | Keeps the free database from pausing |
 
 When you change `index.html`, also change `VERSION` in `sw.js` so phones load the new version.

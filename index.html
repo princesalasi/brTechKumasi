@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrowTech Kumasi</title>
-<meta name="theme-color" content="#fdf4f8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fbd3e5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#2a0f1d" media="(prefers-color-scheme: dark)">
 <link rel="manifest" id="manifestLink" href="manifest-book.webmanifest">
 <script>
   // Staff area (#staff) installs as the staff app; the main link is the customer booking page.
   if (location.hash === "#staff") document.getElementById("manifestLink").href = "manifest.webmanifest";
 </script>
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" href="btk-icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="btk-apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -21,7 +21,7 @@
 /* ---------- colours: the owner's Bubblegum Pink with the logo's rose gold, separate light and dark sets ---------- */
 :root {
   color-scheme: light;
-  --bg: #fdf4f8; --card: #ffffff; --card2: #fbeef5; --text: #000000; --text2: #6f6068; --text3: #8f7f88;
+  --bg: #fbd3e5; --card: #ffffff; --card2: #fde7f1; --text: #000000; --text2: #5f4a55; --text3: #7a6470;
   --sep: rgba(80,40,60,.16); --fill: rgba(240,93,163,.11); --fill2: rgba(240,93,163,.2);
   --tint: #f05da3; --tint-ink: #3b0a22; --tint-text: #c2257a; --pink: #c2257a; --pink-ink: #ffffff;
   --red: #d70015; --green: #1a7f37; --orange-bg: #fff1d6; --orange-ink: #8a4b00; --grid: rgba(80,40,60,.1); --muted: #8f7f88;
@@ -29,13 +29,13 @@
   --money: #c2257a;
   --income-card: linear-gradient(155deg, #f05da3 0%, #c2257a 100%);
   --appt-card: linear-gradient(155deg, #d98a74 0%, #b4604c 100%);
-  --bar: rgba(253,246,250,.78); --scrim: rgba(30,10,20,.32);
+  --bar: rgba(253,226,238,.82); --scrim: rgba(30,10,20,.32);
   --shadow: 0 1px 2px rgba(60,20,40,.05), 0 4px 14px rgba(60,20,40,.06);
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --bg: #000000; --card: #1c1b1f; --card2: #2b2930; --text: #ffffff; --text2: #a29ead; --text3: #8d8996;
+    --bg: #2a0f1d; --card: #40182d; --card2: #52223b; --text: #ffffff; --text2: #a29ead; --text3: #8d8996;
     --sep: rgba(100,84,92,.6); --fill: rgba(240,93,163,.18); --fill2: rgba(240,93,163,.3);
     --tint: #f05da3; --tint-ink: #2b0518; --tint-text: #ff8cc4; --pink: #ff8cc4; --pink-ink: #3b0a22;
     --red: #ff6961; --green: #32d74b; --orange-bg: #3d2a0a; --orange-ink: #ffcf7a; --grid: rgba(90,84,100,.45); --muted: #8d8996;
@@ -43,7 +43,7 @@
     --money: #ff8cc4;
     --income-card: linear-gradient(155deg, #d04a8d 0%, #93306a 100%);
     --appt-card: linear-gradient(155deg, #b8705c 0%, #8a4a3a 100%);
-    --bar: rgba(22,21,24,.78); --scrim: rgba(0,0,0,.5);
+    --bar: rgba(42,15,29,.82); --scrim: rgba(0,0,0,.5);
     --shadow: none;
   }
 }
@@ -102,7 +102,7 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 .order-svc { padding-left: 28px; }
 .mode { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--fill); border-radius: 12px; padding: 3px; margin: 12px 0 14px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
 .mode .thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform 260ms cubic-bezier(.3,1.25,.5,1); }
-@media (prefers-color-scheme: dark) { .mode .thumb { background: #4a4652; } }
+@media (prefers-color-scheme: dark) { .mode .thumb { background: #6a2f4e; } }
 @media (prefers-reduced-motion: reduce) { .mode .thumb { transition: none; } }
 .mode[data-mode="appt"] .thumb, .mode[data-mode="momo"] .thumb, .mode[data-mode="staff"] .thumb { transform: translateX(100%); }
 .mode.drag { cursor: grabbing; }
@@ -230,7 +230,7 @@ input[type=date] { min-width: 0; max-width: 100%; }
 .seg { display: flex; background: var(--fill); border-radius: 10px; padding: 2px; }
 .seg button { flex: 1; border: 0; background: transparent; padding: 8px 4px; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 200ms, box-shadow 200ms; }
 .seg button[aria-pressed="true"] { background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,.12); font-weight: 600; }
-@media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { background: #4a4652; } }
+@media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { background: #6a2f4e; } }
 .banner { background: var(--orange-bg); color: var(--orange-ink); border-radius: 14px; padding: 11px 14px; font-size: 15px; margin: 0 0 14px; letter-spacing: 0; }
 
 /* ---------- tables ---------- */
@@ -421,7 +421,7 @@ details.f[open] > summary { margin-bottom: 12px; }
 <div id="book" hidden><main class="bookmain">
   <div class="mode viewSwitch" role="radiogroup" aria-label="Client or staff" data-mode="client"><span class="thumb"></span><button type="button" role="radio" data-mode="client" aria-checked="true">Client</button><button type="button" role="radio" data-mode="staff" aria-checked="false" tabindex="-1">Staff</button></div>
   <div class="hero">
-    <img class="logo" src="icon-192.png" alt="">
+    <img class="logo" src="btk-icon-192.png" alt="">
     <h1>BrowTech Kumasi</h1>
     <p>Book your appointment</p>
   </div>
@@ -467,7 +467,7 @@ details.f[open] > summary { margin-bottom: 12px; }
 <!-- ============ LOGIN ============ -->
 <div id="login" hidden><main>
   <div class="mode viewSwitch" role="radiogroup" aria-label="Client or staff" data-mode="staff"><span class="thumb"></span><button type="button" role="radio" data-mode="client" aria-checked="false" tabindex="-1">Client</button><button type="button" role="radio" data-mode="staff" aria-checked="true">Staff</button></div>
-  <img class="logo" src="icon-192.png" alt="">
+  <img class="logo" src="btk-icon-192.png" alt="">
   <h1 class="login-title">BrowTech Kumasi</h1>
   <p class="login-sub" id="loginSub">Who's using the app?</p>
   <div id="loginUsers">

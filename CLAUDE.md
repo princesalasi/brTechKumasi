@@ -25,7 +25,7 @@ Rules: every entry is permanent (triggers block update/delete). Mistakes → Und
 - `setup.sql` – full database setup. **Safe to run again** (keeps data); run the newest version in Supabase SQL Editor after any DB change. Last line creates the first admin only once.
 - `config.js` – Supabase URL + publishable key (public by design; never put a secret/service_role key here).
 - `sw.js` – offline shell. **Bump `VERSION` whenever index.html changes.**
-- `manifest.webmanifest` (staff app, start `./#staff`), `manifest-book.webmanifest` (booking page), icons, `logo.svg`.
+- `manifest.webmanifest` (staff app, start `./#staff`), `manifest-book.webmanifest` (booking page), icons (`btk-*.png`, made from the owner's logo; use a new file name when they change, because phones cache icons).
 - `.github/workflows/keep-awake.yml` – pings Supabase every 3 days so the free project doesn't pause.
 - `tools/clear_test_entries.sql` – one-time fresh start (deletes entries, keeps people/prices).
 
