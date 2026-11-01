@@ -6,7 +6,11 @@
 <title>BrowTech Kumasi</title>
 <meta name="theme-color" content="#f5f2f9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" id="manifestLink" href="manifest-book.webmanifest">
+<script>
+  // Staff area (#staff) installs as the staff app; the main link is the customer booking page.
+  if (location.hash === "#staff") document.getElementById("manifestLink").href = "manifest.webmanifest";
+</script>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -49,6 +53,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.35 -ap
 button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
 a { color: var(--tint); }
 [hidden] { display: none !important; }
+input[type=checkbox] { accent-color: var(--tint); width: 20px; height: 20px; margin: 0; }
 main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 96px); }
 
 /* ---------- type ---------- */
@@ -267,16 +272,66 @@ details.f > summary::after { content: "›"; color: var(--text3); font-size: 22p
 details.f[open] > summary::after { transform: rotate(-90deg); }
 details.f[open] > summary { margin-bottom: 12px; }
 
+/* ---------- customer booking page ---------- */
+.bookmain { padding-bottom: calc(env(safe-area-inset-bottom) + 120px); }
+.hero { text-align: center; padding: 28px 0 8px; }
+.hero .logo { margin-bottom: 14px; }
+.hero h1 { font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; margin: 0; }
+.hero p { color: var(--text2); margin: 6px 0 0; font-size: 17px; }
+.step { margin-top: 26px; transition: opacity 240ms; }
+.step.off { opacity: .4; pointer-events: none; }
+.step-h { font-size: 20px; font-weight: 700; letter-spacing: -0.015em; margin: 0 4px 10px; display: flex; align-items: center; gap: 10px; }
+.step-h .n { width: 26px; height: 26px; border-radius: 50%; background: var(--tint); color: var(--tint-ink); display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none; letter-spacing: 0; }
+.pills { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 12px; padding: 2px 16px 4px; scroll-padding-inline: 16px; }
+.pills::-webkit-scrollbar { display: none; }
+.pill { flex: none; border: 0; border-radius: 20px; padding: 8px 15px; font-size: 15px; font-weight: 600; background: var(--card); color: var(--text); box-shadow: var(--shadow); cursor: pointer; display: flex; align-items: center; gap: 7px; letter-spacing: 0; }
+@media (prefers-color-scheme: dark) { .pill { background: var(--card2); } }
+.pill i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.pill[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); }
+.svc { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; text-align: left; padding: 13px 16px; cursor: pointer; position: relative; }
+.svc + .svc::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
+.svc:active { background: var(--fill); }
+.svc .nm { font-size: 17px; font-weight: 500; }
+.svc .du { font-size: 14px; color: var(--text2); margin-top: 1px; letter-spacing: 0; }
+.svc .pr { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.svc .pr.na { font-weight: 400; color: var(--text2); font-size: 14px; }
+.svc .radio { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--text3); display: grid; place-items: center; transition: background 150ms, border-color 150ms; }
+.svc[aria-checked="true"] .radio { background: var(--tint); border-color: var(--tint); }
+.svc[aria-checked="true"] .radio::after { content: ""; width: 9px; height: 5px; border: solid var(--tint-ink); border-width: 0 0 2.2px 2.2px; transform: rotate(-45deg) translate(1px, -1px); }
+.slots { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+.slot { border: 0; border-radius: 12px; padding: 11px 0; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; background: var(--card); color: var(--tint); box-shadow: var(--shadow); cursor: pointer; }
+@media (prefers-color-scheme: dark) { .slot { background: var(--card2); } }
+.slot[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); }
+.slotnote { grid-column: 1 / -1; }
+.bookbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--bar); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); border-top: .5px solid var(--sep); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
+.bookbar .in { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.bookbar .sum { flex: 1; min-width: 0; font-size: 14px; color: var(--text2); letter-spacing: 0; line-height: 1.3; }
+.bookbar .sum b { color: var(--text); font-weight: 600; display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bookbar .btn { flex: none; }
+.donecard { text-align: center; padding: 26px 18px 20px; }
+.donecard .big { width: 64px; height: 64px; border-radius: 50%; background: var(--tint); color: var(--tint-ink); display: grid; place-items: center; margin: 0 auto 14px; }
+.donecard .big svg { width: 34px; height: 34px; }
+.donecard h2 { font-size: 24px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.hp { position: absolute !important; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.foot-link { display: block; text-align: center; color: var(--text3); font-size: 14px; margin: 40px 0 0; text-decoration: none; letter-spacing: 0; }
+.hourrow { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 8px; min-height: 46px; padding: 0 12px; position: relative; }
+.hourrow + .hourrow::before { content: ""; position: absolute; top: 0; left: 12px; right: 0; border-top: .5px solid var(--sep); }
+.hourrow label { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 15px; }
+.hourrow .tt { display: flex; align-items: center; gap: 6px; justify-content: flex-end; font-size: 15px; color: var(--text2); }
+.hourrow input[type=time] { border: 0; background: var(--fill); border-radius: 8px; padding: 6px 8px; font-size: 15px; min-width: 0; }
+.hourrow .closed { color: var(--text3); font-size: 15px; text-align: right; }
+
 /* ---------- accessibility ---------- */
 @media (prefers-reduced-motion: reduce) {
   .sheet { transition: opacity 200ms ease; transform: none; opacity: 0; }
   .sheet.on { opacity: 1; }
   .press:active, .op:active { transform: none; }
+  .step { transition: none; }
   .pindots.shake { animation: none; }
   #toast { transition: opacity 200ms; transform: translate(-50%, 0); }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .tabbar { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .tabbar, .bookbar { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
   #toast { background: #28242e; }
 }
 @media (prefers-contrast: more) {
@@ -287,6 +342,50 @@ details.f[open] > summary { margin-bottom: 12px; }
 <body>
 
 <div id="setup" hidden><main><div class="card" style="margin-top:40px"><h2>Almost ready</h2><p>This app is not connected to its database yet. Fill in <b>config.js</b> with the Supabase Project URL and key (see README).</p></div></main></div>
+
+<!-- ============ CUSTOMER BOOKING PAGE ============ -->
+<div id="book" hidden><main class="bookmain">
+  <div class="hero">
+    <img class="logo" src="icon-192.png" alt="">
+    <h1>BrowTech Kumasi</h1>
+    <p>Book your appointment</p>
+  </div>
+  <div class="card" id="bkLoading" style="margin-top:24px"><div class="empty">Loading…</div></div>
+  <div class="card" id="bkError" hidden style="margin-top:24px"></div>
+  <div id="bkForm" hidden>
+    <section class="step" id="bkStep1">
+      <h2 class="step-h"><span class="n">1</span>Choose a service</h2>
+      <div class="pills" id="bkCats" role="group" aria-label="Category"></div>
+      <div class="group" id="bkServices" role="radiogroup" aria-label="Service"></div>
+    </section>
+    <section class="step off" id="bkStep2">
+      <h2 class="step-h"><span class="n">2</span>Choose a day</h2>
+      <div class="days" id="bkDays"></div>
+    </section>
+    <section class="step off" id="bkStep3">
+      <h2 class="step-h"><span class="n">3</span>Choose a time</h2>
+      <div class="slots" id="bkTimes"></div>
+    </section>
+    <section class="step off" id="bkStep4">
+      <h2 class="step-h"><span class="n">4</span>Your details</h2>
+      <div class="rows">
+        <div class="rowf"><label for="bkName">Name</label><input id="bkName" autocomplete="name" placeholder="Your name"></div>
+        <div class="rowf"><label for="bkPhone">Phone</label><input id="bkPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="WhatsApp or call"></div>
+        <div class="rowf"><label for="bkNote">Note</label><input id="bkNote" autocomplete="off" placeholder="Optional"></div>
+      </div>
+      <input class="hp" id="bkWebsite" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="hint">This is a request. We will confirm your appointment by phone or WhatsApp.</p>
+      <p class="err" id="bkErr" hidden role="alert"></p>
+    </section>
+  </div>
+  <div id="bkDone" hidden></div>
+  <a class="foot-link" href="#staff" id="staffLink">Staff login</a>
+</main>
+<div class="bookbar" id="bookbar" hidden><div class="in">
+  <div class="sum" id="bkSum"><b>Choose a service</b>then a day and time</div>
+  <button class="btn" id="bkSend" type="button" disabled>Request</button>
+</div></div>
+</div>
 
 <!-- ============ LOGIN ============ -->
 <div id="login" hidden><main>
@@ -307,6 +406,7 @@ details.f[open] > summary { margin-bottom: 12px; }
       <button class="btn" id="pinGo" type="button" disabled>Log in</button>
     </div>
   </div>
+  <a class="foot-link" href="#">← Customer booking page</a>
 </main></div>
 
 <!-- ============ APP ============ -->
@@ -321,7 +421,7 @@ details.f[open] > summary { margin-bottom: 12px; }
     <div class="cards">
       <button class="scard income press" id="cardIncome" type="button">
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-        <span class="slabel">Income today</span>
+        <span class="slabel" id="incLabel">Income today</span>
         <span><span class="sbig" id="incToday"><small>GH₵</small>0</span><span class="ssub" id="incSub" style="display:block"></span></span>
       </button>
       <button class="scard appts press" id="cardAppts" type="button">
@@ -335,11 +435,15 @@ details.f[open] > summary { margin-bottom: 12px; }
       <button class="op alt press needs-net" id="btnBook" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>Book</button>
     </div>
 
+    <div id="reqArea" hidden>
+      <div class="section-h" id="reqHead"><span id="reqTitle">New requests</span></div>
+      <div class="group" id="reqList"></div>
+    </div>
     <div class="section-h" id="apptHead"><span id="apptTitle">Appointments</span></div>
     <div class="days" id="dayStrip"></div>
     <div class="group" id="apptList"></div>
 
-    <div class="section-h"><span>Recent services</span><button type="button" id="seeAll">See all</button></div>
+    <div class="section-h"><span id="recentTitle">Recent services</span><button type="button" id="seeAll">See all</button></div>
     <div class="group" id="recent"></div>
   </section>
 
@@ -351,7 +455,7 @@ details.f[open] > summary { margin-bottom: 12px; }
       <summary><span>Filter</span><span class="muted small" id="filterSummary" style="margin-left:auto;margin-right:10px;font-weight:400">All entries</span></summary>
       <div class="field"><label for="fText">Search</label><input id="fText" type="search" autocomplete="off" placeholder="Customer, phone or note"></div>
       <div class="filters">
-        <div class="field"><label for="fType">Type</label><select id="fType"><option value="">All</option><option value="sale">Services done</option><option value="appointment">Bookings</option><option value="change">Booking changes</option><option value="undone">Undone only</option></select></div>
+        <div class="field"><label for="fType">Type</label><select id="fType"><option value="">All</option><option value="sale">Services done</option><option value="appointment">Bookings</option><option value="online">Online requests</option><option value="change">Booking changes</option><option value="undone">Undone only</option></select></div>
         <div class="field"><label for="fCat">Category</label><select id="fCat"></select></div>
         <div class="field"><label for="fStaff">Staff (did it)</label><select id="fStaff"></select></div>
         <div class="field"><label for="fUser">Entered by</label><select id="fUser"></select></div>
@@ -409,11 +513,19 @@ details.f[open] > summary { margin-bottom: 12px; }
     <div class="card">
       <div class="row"><button class="btn secondary" id="changePinBtn" type="button">Change my PIN</button><button class="btn danger" id="logoutBtn" type="button">Log out</button></div>
     </div>
+    <div class="section-h"><span>Customer booking page</span></div>
+    <div class="card">
+      <p class="small muted" style="margin:0 0 10px">Share this link on WhatsApp, Instagram or Google so customers can request appointments.</p>
+      <p class="small" style="margin:0 0 12px;overflow-wrap:anywhere"><b id="bookUrl"></b></p>
+      <div class="row"><button class="btn secondary small" id="shareLink" type="button">Share link</button><a class="btn secondary small" href="#" id="openBook">Open page</a></div>
+    </div>
     <div id="adminArea" hidden>
+      <div class="section-h"><span>Online booking</span></div>
+      <div class="card"><div id="cfgSummary"></div><button class="btn secondary small needs-net" id="cfgBtn" type="button" style="margin-top:10px">Change booking settings</button></div>
       <div class="section-h"><span>People</span></div>
       <div class="card"><div id="userList"></div><button class="btn secondary small needs-net" id="addUserBtn" type="button" style="margin-top:10px">Add person</button></div>
       <div class="section-h"><span>Price list</span></div>
-      <div class="card"><p class="small muted" style="margin:0 0 4px">Prices fill in automatically when a service is entered and can still be changed for one customer. Tap a service to change it.</p><div id="priceList"></div><button class="btn secondary small needs-net" id="addSvcBtn" type="button" style="margin-top:10px">Add service</button></div>
+      <div class="card"><p class="small muted" style="margin:0 0 4px">Prices fill in automatically when a service is entered and can still be changed for one customer. The time a service takes decides which times customers can book. Tap a service to change it.</p><div id="priceList"></div><button class="btn secondary small needs-net" id="addSvcBtn" type="button" style="margin-top:10px">Add service</button></div>
       <div class="section-h"><span>Activity log</span></div>
       <div class="card"><p class="small muted" style="margin:0 0 4px">People added, PINs changed, prices changed, lockouts. Cannot be edited.</p><div id="eventList"></div><button class="link" id="evMore" type="button" hidden>Show more</button></div>
     </div>
@@ -422,7 +534,7 @@ details.f[open] > summary { margin-bottom: 12px; }
       <div class="card"><div id="priceView"></div></div>
     </div>
     <div class="section-h" id="installH"><span>Home screen</span></div>
-    <div class="card" id="installCard"><p class="small" style="margin:0">iPhone: open this page in <b>Safari</b> → tap <b>Share</b> → <b>Add to Home Screen</b>.<br>Android: in <b>Chrome</b> tap <b>⋮</b> → <b>Add to Home screen</b> / <b>Install app</b>.</p></div>
+    <div class="card" id="installCard"><p class="small" style="margin:0">Add the <b>staff app</b> from this page (it opens straight to the staff login).<br>iPhone: open this page in <b>Safari</b> → tap <b>Share</b> → <b>Add to Home Screen</b>.<br>Android: in <b>Chrome</b> tap <b>⋮</b> → <b>Add to Home screen</b> / <b>Install app</b>.</p></div>
     <div class="section-h"><span>App</span></div>
     <div class="card"><p class="small muted" id="syncInfo" style="margin:0 0 10px"></p>
       <button class="btn secondary small" id="reloadAll" type="button">Reload all data</button></div>
@@ -450,7 +562,8 @@ const TZ = "Africa/Accra"; // all days and times are Kumasi time, wherever the p
 const CATS = { pony: "Pony", piercing: "Piercing", brows: "Brows", tattoo: "Tattoo", lashes: "Lashes", nails: "Nails" };
 const CAT_KEYS = Object.keys(CATS);
 const PAY = { cash: "Cash", momo: "MoMo", card: "Card / bank", free: "Free" };
-const STATUS = { booked: "Booked", done: "Done", cancelled: "Cancelled", "no-show": "No-show", undone: "Undone" };
+const STATUS = { requested: "Request", booked: "Booked", done: "Done", declined: "Declined", cancelled: "Cancelled", "no-show": "No-show", undone: "Undone" };
+const isAdmin = () => !!(session && session.user && session.user.is_admin);
 const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 function load(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
@@ -458,7 +571,7 @@ function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch 
 let session = load(LS_SESSION, null);
 let prefs = Object.assign({}, load(LS_PREFS, {}));
 let db = load(LS_CACHE, null) || emptyDb();
-function emptyDb() { return { me: null, users: [], services: [], sales: [], appts: [], changes: [], undos: [], events: [], reset: null, synced: null }; }
+function emptyDb() { return { me: null, users: [], services: [], config: null, sales: [], apptDone: [], appts: [], changes: [], undos: [], events: [], reset: null, synced: null }; }
 
 function h(tag, props, ...kids) {
   const e = document.createElement(tag);
@@ -579,13 +692,15 @@ async function sync(full) {
       if (full) db = emptyDb();
       const args = () => ({ p_token: session.token, p_after_sale: lastId(db.sales), p_after_appt: lastId(db.appts), p_after_change: lastId(db.changes), p_after_undo: lastId(db.undos), p_after_event: lastId(db.events) });
       let s = await rpc("get_state", args());
+      // admin rights changed: what this phone may see changed too – load everything again
+      if (db.me && db.me.is_admin !== s.me.is_admin) { db = emptyDb(); s = await rpc("get_state", args()); }
       // test entries were cleared on the server: drop the saved copy on this phone and load again
       if (db.reset !== null && s.reset_count !== db.reset) {
         db = emptyDb(); shownMoney = undefined;
         s = await rpc("get_state", args());
         setTimeout(() => toast("Test entries were cleared – fresh start"), 300);
       }
-      db.me = s.me; db.users = s.users; db.services = s.services; db.reset = s.reset_count;
+      db.me = s.me; db.users = s.users; db.services = s.services; db.reset = s.reset_count; db.config = s.config; db.apptDone = s.appt_done || [];
       db.sales = db.sales.concat(s.sales); db.appts = db.appts.concat(s.appointments);
       db.changes = db.changes.concat(s.changes); db.undos = db.undos.concat(s.undos);
       db.events = db.events.concat(s.events);
@@ -607,18 +722,20 @@ function derive() {
   const undo = { sale: {}, appointment: {}, change: {} };
   db.undos.forEach(u => undo[u.target][u.target_id] = u);
   const saleByAppt = {};
+  db.apptDone.forEach(s => { if (!undo.sale[s.id]) saleByAppt[s.appointment_id] = s; }); // workers: who did it, no amounts
   db.sales.forEach(s => { if (s.appointment_id && !undo.sale[s.id]) saleByAppt[s.appointment_id] = s; });
   const changesOf = {};
   db.changes.forEach(c => (changesOf[c.appointment_id] = changesOf[c.appointment_id] || []).push(c));
   const appt = {};
   db.appts.forEach(a => {
-    const st = { a, status: "booked", date: a.appt_date, time: hm(a.appt_time), staff: a.staff_id, changes: changesOf[a.id] || [], live: [], sale: saleByAppt[a.id] || null };
+    const st = { a, status: a.source === "online" ? "requested" : "booked", date: a.appt_date, time: hm(a.appt_time), staff: a.staff_id, changes: changesOf[a.id] || [], live: [], sale: saleByAppt[a.id] || null };
     if (undo.appointment[a.id]) st.status = "undone";
     else {
       st.changes.forEach(c => {
         if (undo.change[c.id]) return;
         st.live.push(c);
         if (c.action === "moved") { st.date = c.new_date; st.time = hm(c.new_time); st.staff = c.new_staff_id; st.status = "booked"; }
+        else if (c.action === "confirmed") { st.status = "booked"; if (c.new_staff_id) st.staff = c.new_staff_id; }
         else st.status = c.action;
       });
       if (st.sale) st.status = "done";
@@ -630,11 +747,17 @@ function derive() {
 }
 const activeUsers = () => db.users.filter(u => u.active);
 const staffName = (D, id) => id ? (D.userName[id] || "?") : "Anyone";
+const byName = (D, id) => id ? (D.userName[id] || "?") : "customer (online)";
+const canUndo = ownerId => isAdmin() || (session && ownerId === session.user.id);
+const LIVE = st => st.status === "booked" || st.status === "done" || st.status === "requested";
 
 /* ================= render ================= */
 let currentTab = "today";
 function render() {
   if (!session) return;
+  const admin = isAdmin();
+  document.querySelectorAll('.tabbar [data-tab="history"], .tabbar [data-tab="trends"]').forEach(b => b.hidden = !admin);
+  if (!admin && (currentTab === "history" || currentTab === "trends")) { showTab("today"); return; }
   const D = derive();
   $("whoName").textContent = session.user.name;
   updateAgo();
@@ -652,6 +775,7 @@ function updateAgo() {
 /* ---------- entry rows ---------- */
 const CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
 const MOVE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M14 6l6 6-6 6"/></svg>';
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>';
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 const catIco = (cat, html) => h("div", { class: "ico c-" + (CATS[cat] ? cat : "other"), "aria-hidden": "true", html: html || null }, html ? null : (CATS[cat] || "?").slice(0, 2));
 function undoneLine(u, D) { return u ? h("div", { class: "sub why" }, "Undone: " + u.reason + " – " + (D.userName[u.user_id] || "?") + ", " + stamp(u.logged_at)) : null; }
@@ -675,39 +799,42 @@ function saleEl(s, D, opts) {
       undoneLine(u, D)),
     h("div", { class: "side" },
       h("div", { class: "amt" }, money(s.amount)),
-      opts.undo && !u ? h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("sale", s.id, saleEl(s, D, { meta: false })); } }, "Undo") : null));
+      opts.undo && !u && canUndo(s.user_id) ? h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("sale", s.id, saleEl(s, D, { meta: false })); } }, "Undo") : null));
 }
 function apptLogEl(a, D, withUndo) {
   const st = D.appt[a.id], u = D.undo.appointment[a.id];
   return h("div", { class: "entry" + (u ? " struck" : "") + " tap", onclick: () => apptSheet(a.id) },
     catIco(a.category, CAL_SVG),
     h("div", { class: "main" },
-      h("div", { class: "ttl" }, "Booked: " + a.customer, u ? h("span", { class: "tag undone" }, "Undone") : statusTag(st)),
+      h("div", { class: "ttl" }, (a.source === "online" ? "Online request: " : "Booked: ") + a.customer, u ? h("span", { class: "tag undone" }, "Undone") : statusTag(st)),
       h("div", { class: "sub" }, a.service_name + " · for " + relDay(a.appt_date) + " " + hm(a.appt_time) + " · " + staffName(D, a.staff_id) + (a.note ? " · " + a.note : "")),
-      h("div", { class: "sub small" }, "entered by " + (D.userName[a.user_id] || "?") + " · " + timeOnly(a.logged_at) + " · B" + a.id),
+      h("div", { class: "sub small" }, (a.source === "online" ? "sent by the customer" : "entered by " + byName(D, a.user_id)) + " · " + timeOnly(a.logged_at) + " · B" + a.id + (a.phone ? " · " + a.phone : "")),
       undoneLine(u, D)),
-    withUndo && !u && st.status !== "done" ? h("div", { class: "side" }, h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("appointment", a.id, apptLogEl(a, D, false)); } }, "Undo")) : null);
+    withUndo && !u && st.status !== "done" && canUndo(a.user_id) ? h("div", { class: "side" }, h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("appointment", a.id, apptLogEl(a, D, false)); } }, "Undo")) : null);
 }
 function changeText(c, D) {
   if (c.action === "moved") return "to " + relDay(c.new_date) + " " + hm(c.new_time) + " · " + staffName(D, c.new_staff_id);
+  if (c.action === "confirmed") return "Confirmed" + (c.new_staff_id ? " · with " + staffName(D, c.new_staff_id) : "");
+  if (c.action === "declined") return "Declined";
   return c.action === "cancelled" ? "Cancelled" : "Customer didn't come";
 }
 function changeEl(c, D, withUndo) {
   const a = db.appts.find(x => x.id === c.appointment_id) || {};
   const u = D.undo.change[c.id];
   return h("div", { class: "entry" + (u ? " struck" : "") + " tap", onclick: () => apptSheet(c.appointment_id) },
-    catIco(a.category, c.action === "moved" ? MOVE_SVG : X_SVG),
+    catIco(a.category, c.action === "moved" ? MOVE_SVG : c.action === "confirmed" ? CHECK_SVG : X_SVG),
     h("div", { class: "main" },
-      h("div", { class: "ttl" }, ({ moved: "Moved", cancelled: "Cancelled", "no-show": "No-show" })[c.action] + ": " + (a.customer || ""), u ? h("span", { class: "tag undone" }, "Undone") : null),
+      h("div", { class: "ttl" }, ({ moved: "Moved", cancelled: "Cancelled", "no-show": "No-show", confirmed: "Confirmed", declined: "Declined" })[c.action] + ": " + (a.customer || ""), u ? h("span", { class: "tag undone" }, "Undone") : null),
       h("div", { class: "sub" }, (a.service_name || "") + " · " + changeText(c, D) + (c.note ? " · " + c.note : "")),
       h("div", { class: "sub small" }, "entered by " + (D.userName[c.user_id] || "?") + " · " + timeOnly(c.logged_at) + " · C" + c.id),
       undoneLine(u, D)),
-    withUndo && !u ? h("div", { class: "side" }, h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("change", c.id, changeEl(c, D, false)); } }, "Undo")) : null);
+    withUndo && !u && canUndo(c.user_id) ? h("div", { class: "side" }, h("button", { class: "btn small secondary needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); undoSheet("change", c.id, changeEl(c, D, false)); } }, "Undo")) : null);
 }
 function statusTag(st) {
   if (!st) return null;
   if (st.status === "done") return h("span", { class: "tag done" }, "Done");
-  if (st.status === "cancelled" || st.status === "no-show") return h("span", { class: "tag warn" }, STATUS[st.status]);
+  if (st.status === "cancelled" || st.status === "no-show" || st.status === "declined") return h("span", { class: "tag warn" }, STATUS[st.status]);
+  if (st.status === "requested") return h("span", { class: "tag warn" }, "Request");
   if (st.status === "undone") return h("span", { class: "tag undone" }, "Undone");
   return h("span", { class: "tag tint" }, "Booked");
 }
@@ -715,31 +842,59 @@ function statusTag(st) {
 /* ---------- today ---------- */
 let apptDay = null;
 function renderToday(D) {
-  const t = today();
+  const t = today(), admin = isAdmin();
   if (!apptDay) apptDay = t;
   $("todayDate").textContent = longDay(t);
-  const todays = D.liveSales.filter(s => s.entry_date === t);
-  const inc = todays.reduce((a, s) => a + cents(s.amount), 0);
-  const len = moneyPlain(fromCents(inc)).length;
-  $("incToday").style.fontSize = len <= 6 ? "" : len <= 8 ? "28px" : "23px";
-  animateValue($("incToday"), shownMoney, inc, c => [h("small", null, "GH₵"), moneyPlain(fromCents(c))]);
-  shownMoney = inc;
-  $("incSub").textContent = todays.length ? todays.length + " service" + (todays.length === 1 ? "" : "s") : "No services yet";
+  const requests = Object.values(D.appt).filter(st => st.status === "requested" && st.date >= t).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  if (admin) {
+    const todays = D.liveSales.filter(s => s.entry_date === t);
+    const inc = todays.reduce((a, s) => a + cents(s.amount), 0);
+    const len = moneyPlain(fromCents(inc)).length;
+    $("incLabel").textContent = "Income today";
+    $("incToday").style.fontSize = len <= 6 ? "" : len <= 8 ? "28px" : "23px";
+    animateValue($("incToday"), shownMoney, inc, c => [h("small", null, "GH₵"), moneyPlain(fromCents(c))]);
+    shownMoney = inc;
+    $("incSub").textContent = todays.length ? todays.length + " service" + (todays.length === 1 ? "" : "s") : "No services yet";
+  } else {
+    $("incLabel").textContent = "New requests";
+    $("incToday").style.fontSize = "";
+    $("incToday").textContent = nf.format(requests.length);
+    $("incSub").textContent = requests.length ? "waiting for an answer" : "All answered";
+  }
+  $("cardIncome").querySelector(".chev").innerHTML = admin ? '<path d="m9 6 6 6-6 6"/>' : '<path d="m6 9 6 6 6-6"/>';
   const apToday = Object.values(D.appt).filter(st => st.date === t && st.status !== "undone");
   const open = apToday.filter(st => st.status === "booked");
   $("apptToday").textContent = nf.format(apToday.filter(st => st.status === "booked" || st.status === "done").length);
   $("apptSub").textContent = open.length ? open.length + " still to come" : apToday.length ? "None left today" : "None today";
+  // requests from the booking page
+  $("reqArea").hidden = !requests.length;
+  $("reqTitle").textContent = "New requests · " + requests.length;
+  $("reqList").replaceChildren(...requests.map(st => requestRow(st, D)));
   renderDays(D);
   renderApptList(D);
   const rc = $("recent"); rc.innerHTML = "";
-  const last = db.sales.slice(-5).reverse();
-  if (!last.length) rc.append(h("div", { class: "empty" }, "No services entered yet."));
-  last.forEach(s => rc.append(saleEl(s, D, { tap: true, meta: false })));
+  const mine = admin ? db.sales.slice(-5).reverse() : db.sales.filter(s => s.entry_date === t && s.user_id === session.user.id).reverse();
+  $("recentTitle").textContent = admin ? "Recent services" : "My entries today";
+  $("seeAll").hidden = !admin;
+  if (!mine.length) rc.append(h("div", { class: "empty" }, admin ? "No services entered yet." : "You haven't entered a service today."));
+  mine.forEach(s => rc.append(saleEl(s, D, { tap: true, meta: false })));
+}
+function requestRow(st, D) {
+  const a = st.a;
+  return h("div", { class: "entry tap", onclick: () => apptSheet(a.id) },
+    h("div", { class: "time", style: "width:62px" }, h("div", { class: "small", style: "font-weight:600;color:var(--tint)" }, relDay(st.date).replace(/ \d{4}$/, "")), st.time),
+    h("div", { class: "main" },
+      h("div", { class: "ttl" }, a.customer),
+      h("div", { class: "sub" }, h("span", { class: "key", style: "background:var(--c-" + (CATS[a.category] ? a.category : "other") + ")" }), a.service_name + " · " + durText(a.duration_min || 60)),
+      h("div", { class: "sub" }, [a.phone, a.note].filter(Boolean).join(" · ")),
+      h("div", { class: "row", style: "margin-top:8px", onclick: e => e.stopPropagation() },
+        h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: () => confirmSheet(st) }, "Confirm"),
+        h("button", { class: "btn small danger needs-net", type: "button", disabled: !online, onclick: () => declineSheet(st) }, "Decline"))));
 }
 function renderDays(D) {
   const strip = $("dayStrip"), t = today();
   const count = {};
-  Object.values(D.appt).forEach(st => { if (st.status === "booked" || st.status === "done") count[st.date] = (count[st.date] || 0) + 1; });
+  Object.values(D.appt).forEach(st => { if (LIVE(st)) count[st.date] = (count[st.date] || 0) + 1; });
   const days = []; for (let i = 0; i < 14; i++) days.push(addDays(t, i));
   if (!days.includes(apptDay)) days.unshift(apptDay);
   const prevScroll = strip.scrollLeft;
@@ -758,20 +913,21 @@ function renderDays(D) {
 function renderApptList(D) {
   $("apptTitle").textContent = "Appointments · " + relDay(apptDay);
   const box = $("apptList"); box.innerHTML = "";
-  const list = Object.values(D.appt).filter(st => st.date === apptDay && st.status !== "undone")
+  const list = Object.values(D.appt).filter(st => st.date === apptDay && st.status !== "undone" && st.status !== "declined")
     .sort((a, b) => a.time.localeCompare(b.time) || a.a.id - b.a.id);
   if (!list.length) { box.append(h("div", { class: "empty" }, "No appointments " + (apptDay === today() ? "today" : "on this day") + ".")); return; }
   list.forEach(st => box.append(apptRow(st, D)));
 }
 function apptRow(st, D) {
   const a = st.a, off = st.status === "cancelled" || st.status === "no-show";
+  if (st.status === "requested") return requestRow(st, D);
   return h("div", { class: "entry tap" + (off ? " dim" : ""), onclick: () => apptSheet(a.id) },
     h("div", { class: "time" }, st.time),
     h("div", { class: "main" },
       h("div", { class: "ttl" }, a.customer, st.status !== "booked" ? statusTag(st) : null),
       h("div", { class: "sub" }, h("span", { class: "key", style: "background:var(--c-" + (CATS[a.category] ? a.category : "other") + ")" }), a.service_name + " · " + staffName(D, st.staff)),
       a.phone || a.note ? h("div", { class: "sub" }, [a.phone, a.note].filter(Boolean).join(" · ")) : null,
-      st.sale ? h("div", { class: "sub" }, "Paid " + money(st.sale.amount) + " · " + PAY[st.sale.payment]) : null),
+      st.sale && st.sale.amount !== undefined ? h("div", { class: "sub" }, "Paid " + money(st.sale.amount) + " · " + PAY[st.sale.payment]) : st.sale ? h("div", { class: "sub" }, "Done by " + (D.userName[st.sale.staff_id] || "?")) : null),
     st.status === "booked" ? h("div", { class: "side" }, h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: e => { e.stopPropagation(); saleFormSheet({ appt: st }); } }, "Done")) : null);
 }
 function todaySheet() {
@@ -867,7 +1023,7 @@ function saleFormSheet(opts) {
     payBlk,
     h("div", { class: "rows" },
       h("div", { class: "rowf" }, h("label", { for: "sStaff" }, "Done by"), staff),
-      h("div", { class: "rowf" }, h("label", { for: "sDate" }, "Date"), date),
+      isAdmin() ? h("div", { class: "rowf" }, h("label", { for: "sDate" }, "Date"), date) : null,
       h("div", { class: "rowf" }, h("label", { for: "sCust" }, "Customer"), cust),
       h("div", { class: "rowf" }, h("label", { for: "sPhone" }, "Phone"), phone),
       h("div", { class: "rowf" }, h("label", { for: "sNote" }, "Note"), note))
@@ -895,12 +1051,29 @@ function bookSheet() {
   const time = h("input", { id: "bTime", type: "time", step: 300, value: apptDay && apptDay > today() ? "10:00" : nextSlot() });
   const staff = staffSelect("bStaff", null, true);
   const note = h("input", { id: "bNote", autocomplete: "off", placeholder: "Optional" });
+  const free = h("div", { class: "slots", style: "margin:0 0 14px" });
+  let ticket = 0;
+  const loadFree = async () => {
+    const my = ++ticket;
+    if (!date.value) { free.replaceChildren(); return; }
+    free.replaceChildren(h("p", { class: "hint slotnote" }, "Looking for free times…"));
+    try {
+      const list = await call("staff_slots", { p_service_id: sel.value && sel.value !== "other" ? +sel.value : null, p_date: date.value });
+      if (my !== ticket) return;
+      free.replaceChildren(h("p", { class: "hint slotnote", style: "margin-top:0" }, list.length ? "Free times (tap to use – you can also type any time):" : "No free times on this day in the opening hours. You can still type a time."),
+        ...list.map(t => h("button", { class: "slot", type: "button", "aria-pressed": String(t === time.value), onclick: () => { time.value = t; [...free.querySelectorAll(".slot")].forEach(b => b.setAttribute("aria-pressed", String(b.textContent === t))); } }, t)));
+    } catch (e) { if (my === ticket) free.replaceChildren(h("p", { class: "hint slotnote" }, e.message)); }
+  };
+  sel.addEventListener("change", loadFree); date.addEventListener("change", loadFree);
+  setTimeout(loadFree, 50);
   sheet("Book appointment", [
     field("Customer name", cust), field("Phone", phone),
     field("Service", sel), o.box,
     h("div", { class: "rows" },
       h("div", { class: "rowf" }, h("label", { for: "bDate" }, "Date"), date),
-      h("div", { class: "rowf" }, h("label", { for: "bTime" }, "Time"), time),
+      h("div", { class: "rowf" }, h("label", { for: "bTime" }, "Time"), time)),
+    free,
+    h("div", { class: "rows" },
       h("div", { class: "rowf" }, h("label", { for: "bStaff" }, "With"), staff),
       h("div", { class: "rowf" }, h("label", { for: "bNote" }, "Note"), note))
   ], "Book", async () => {
@@ -916,52 +1089,95 @@ function bookSheet() {
 }
 
 /* ---------- appointment details ---------- */
+function waText(st, kind) {
+  const a = st.a, when = longDay(st.date) + " at " + st.time;
+  if (kind === "confirmed") return "Hello " + a.customer + ", your appointment at BrowTech Kumasi for " + a.service_name + " on " + when + " is confirmed. See you soon!";
+  if (kind === "declined") return "Hello " + a.customer + ", thank you for your request. Sorry, we can't take " + a.service_name + " on " + when + ". Please choose another time here: " + bookLink();
+  if (kind === "moved") return "Hello " + a.customer + ", your appointment at BrowTech Kumasi for " + a.service_name + " is now on " + when + ".";
+  if (kind === "reminder") return "Hello " + a.customer + ", a reminder of your appointment at BrowTech Kumasi for " + a.service_name + " on " + when + ". See you soon!";
+  return "Hello " + a.customer + ", this is BrowTech Kumasi about your appointment on " + when + ".";
+}
+function openWhatsApp(st, kind) { if (st.a.phone) window.open(waLink(st.a.phone, waText(st, kind)), "_blank", "noopener"); }
 function apptSheet(id) {
   const D = derive(), st = D.appt[id]; if (!st) return;
   const a = st.a;
-  const hist = [h("div", { class: "entry noico" }, h("div", { class: "main" }, h("div", { class: "ttl" }, "Booked for " + niceDay(a.appt_date) + " " + hm(a.appt_time)), h("div", { class: "sub" }, "with " + staffName(D, a.staff_id) + " · by " + (D.userName[a.user_id] || "?") + " " + stamp(a.logged_at)), undoneLine(D.undo.appointment[a.id], D)))];
+  const hist = [h("div", { class: "entry noico" }, h("div", { class: "main" }, h("div", { class: "ttl" }, (a.source === "online" ? "Requested online for " : "Booked for ") + niceDay(a.appt_date) + " " + hm(a.appt_time)), h("div", { class: "sub" }, (a.source === "online" ? "by the customer " : "with " + staffName(D, a.staff_id) + " · by " + byName(D, a.user_id) + " ") + stamp(a.logged_at)), undoneLine(D.undo.appointment[a.id], D)))];
   st.changes.forEach(c => { const u = D.undo.change[c.id]; hist.push(h("div", { class: "entry noico" + (u ? " struck" : "") }, h("div", { class: "main" }, h("div", { class: "ttl" }, (c.action === "moved" ? "Moved " : "") + changeText(c, D)), h("div", { class: "sub" }, "by " + (D.userName[c.user_id] || "?") + " " + stamp(c.logged_at) + (c.note ? " · " + c.note : "")), undoneLine(u, D)))); });
   db.sales.filter(s => s.appointment_id === a.id).forEach(s => { const u = D.undo.sale[s.id]; hist.push(h("div", { class: "entry noico" + (u ? " struck" : "") }, h("div", { class: "main" }, h("div", { class: "ttl" }, "Done · paid " + money(s.amount) + " (" + PAY[s.payment] + ")"), h("div", { class: "sub" }, "by " + (D.userName[s.staff_id] || "?") + " · entered " + stamp(s.logged_at)), undoneLine(u, D)))); });
+  if (st.sale && st.sale.amount === undefined) hist.push(h("div", { class: "entry noico" }, h("div", { class: "main" }, h("div", { class: "ttl" }, "Done"), h("div", { class: "sub" }, "by " + (D.userName[st.sale.staff_id] || "?")))));
   const acts = [];
   let s;
   const go = fn => () => { s.close(); setTimeout(fn, 180); };
-  if (st.status === "booked") {
-    acts.push(h("button", { class: "choice needs-net", type: "button", disabled: !online, onclick: go(() => saleFormSheet({ appt: st })) }, "Mark as done…"));
-    acts.push(h("button", { class: "choice needs-net", type: "button", disabled: !online, onclick: go(() => moveSheet(st)) }, "Change date, time or staff…"));
-    acts.push(h("button", { class: "choice needs-net", type: "button", disabled: !online, onclick: go(() => statusSheet(st, "no-show")) }, "Customer didn't come…"));
-    acts.push(h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: go(() => statusSheet(st, "cancelled")) }, "Cancel appointment…"));
+  const act = (label, fn, red) => h("button", { class: "choice needs-net" + (red ? " red" : ""), type: "button", disabled: !online, onclick: go(fn) }, label);
+  if (st.status === "requested") {
+    acts.push(act("Confirm request…", () => confirmSheet(st)));
+    acts.push(act("Offer another time (move)…", () => moveSheet(st)));
+    acts.push(act("Mark as done…", () => saleFormSheet({ appt: st })));
+    acts.push(act("Decline request…", () => declineSheet(st), true));
+  } else if (st.status === "booked") {
+    acts.push(act("Mark as done…", () => saleFormSheet({ appt: st })));
+    acts.push(act("Change date, time or staff…", () => moveSheet(st)));
+    acts.push(act("Customer didn't come…", () => statusSheet(st, "no-show")));
+    acts.push(act("Cancel appointment…", () => statusSheet(st, "cancelled"), true));
   }
   const undoActs = [];
-  if (st.status === "done" && st.sale) undoActs.push(h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: go(() => undoSheet("sale", st.sale.id, saleEl(st.sale, derive(), { meta: false }))) }, "Undo “done” (wrong entry)…"));
-  else if (st.status !== "undone") {
+  if (st.status === "done" && st.sale && st.sale.amount !== undefined && canUndo(st.sale.user_id)) undoActs.push(act("Undo “done” (wrong entry)…", () => undoSheet("sale", st.sale.id, saleEl(st.sale, derive(), { meta: false })), true));
+  else if (st.status !== "undone" && st.status !== "done") {
     const lastLive = st.live[st.live.length - 1];
-    if (lastLive) undoActs.push(h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: go(() => undoSheet("change", lastLive.id, changeEl(lastLive, derive(), false))) }, "Undo last change (" + (lastLive.action === "moved" ? "move" : lastLive.action) + ")…"));
-    undoActs.push(h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: go(() => undoSheet("appointment", a.id, apptLogEl(a, derive(), false))) }, "Undo booking (entered by mistake)…"));
+    if (lastLive && canUndo(lastLive.user_id)) undoActs.push(act("Undo last change (" + ({ moved: "move", confirmed: "confirmation", declined: "decline" }[lastLive.action] || lastLive.action) + ")…", () => undoSheet("change", lastLive.id, changeEl(lastLive, derive(), false)), true));
+    if (canUndo(a.user_id)) undoActs.push(act(a.source === "online" ? "Delete request (spam / test)…" : "Undo booking (entered by mistake)…", () => undoSheet("appointment", a.id, apptLogEl(a, derive(), false)), true));
   }
   const tel = (a.phone || "").replace(/[^\d+]/g, "");
-  const wa = tel ? tel.replace(/^\+/, "").replace(/^0/, "233") : "";
+  const waKind = st.status === "booked" ? "reminder" : st.status === "declined" ? "declined" : "hello";
   s = sheet(a.customer, [
-    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, "B" + a.id),
+    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, (a.source === "online" ? "Online request · " : "") + "B" + a.id),
     h("div", { class: "card" }, h("table", { class: "t" },
       h("tr", null, h("td", null, "Status"), h("td", { class: "n" }, statusTag(st) || "")),
       h("tr", null, h("td", null, "When"), h("td", { class: "n" }, relDay(st.date) + " · " + st.time)),
-      h("tr", null, h("td", null, "Service"), h("td", { class: "n" }, a.service_name)),
+      h("tr", null, h("td", null, "Service"), h("td", { class: "n", style: "white-space:normal" }, a.service_name + " (" + durText(a.duration_min || 60) + ")")),
       h("tr", null, h("td", null, "With"), h("td", { class: "n" }, staffName(D, st.staff))),
       a.phone ? h("tr", null, h("td", null, "Phone"), h("td", { class: "n" }, a.phone)) : null,
       a.note ? h("tr", null, h("td", null, "Note"), h("td", { class: "n", style: "white-space:normal" }, a.note)) : null)),
-    tel ? h("div", { class: "row", style: "margin-bottom:14px" }, h("a", { class: "btn secondary small", href: "tel:" + tel }, "Call"), h("a", { class: "btn secondary small", href: "https://wa.me/" + wa, target: "_blank", rel: "noopener" }, "WhatsApp")) : null,
+    tel ? h("div", { class: "row", style: "margin-bottom:14px" }, h("a", { class: "btn secondary small", href: "tel:" + tel }, "Call"), h("a", { class: "btn secondary small", href: waLink(a.phone, waText(st, waKind)), target: "_blank", rel: "noopener" }, "WhatsApp")) : null,
     acts.length ? h("div", { class: "choices" }, acts) : null,
     h("div", { class: "lbl" }, "History"),
     h("div", { class: "card" }, hist),
     undoActs.length ? h("div", { class: "choices" }, undoActs) : null
   ], null, null);
 }
+function confirmSheet(st) {
+  const staff = staffSelect("cStaff", st.staff, true);
+  const note = h("input", { id: "cNote", autocomplete: "off", placeholder: "Optional" });
+  sheet("Confirm request", [
+    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, st.a.customer + " · " + st.a.service_name + " · " + relDay(st.date) + " " + st.time + (st.a.phone ? " · " + st.a.phone : "")),
+    h("div", { class: "rows" },
+      h("div", { class: "rowf" }, h("label", { for: "cStaff" }, "With"), staff),
+      h("div", { class: "rowf" }, h("label", { for: "cNote" }, "Note"), note)),
+    h("p", { class: "hint" }, "After confirming, tap “WhatsApp” in the message at the bottom to tell the customer.")
+  ], "Confirm", async () => {
+    await call("change_appointment", { p_id: st.a.id, p_action: "confirmed", p_date: null, p_time: null, p_staff_id: staff.value ? +staff.value : null, p_note: note.value });
+    await sync();
+    toast("Confirmed", 9000, st.a.phone ? "WhatsApp" : null, st.a.phone ? () => openWhatsApp(st, "confirmed") : null);
+  }, { focus: false });
+}
+function declineSheet(st) {
+  const note = h("input", { id: "dNote", autocomplete: "off", placeholder: "e.g. fully booked" });
+  sheet("Decline request?", [
+    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, st.a.customer + " · " + st.a.service_name + " · " + relDay(st.date) + " " + st.time),
+    field("Reason (for the log)", note),
+    h("p", { class: "hint" }, "Tip: to suggest another time instead, use “Offer another time (move)” on the request.")
+  ], "Decline", async () => {
+    await call("change_appointment", { p_id: st.a.id, p_action: "declined", p_date: null, p_time: null, p_staff_id: null, p_note: note.value });
+    await sync();
+    toast("Declined", 9000, st.a.phone ? "WhatsApp" : null, st.a.phone ? () => openWhatsApp(st, "declined") : null);
+  }, { danger: true, focus: false });
+}
 function moveSheet(st) {
   const date = h("input", { id: "mDate", type: "date", value: st.date, min: today() });
   const time = h("input", { id: "mTime", type: "time", step: 300, value: st.time });
   const staff = staffSelect("mStaff", st.staff, true);
   const note = h("input", { id: "mNote", autocomplete: "off", placeholder: "Optional, e.g. customer asked" });
-  sheet("Change appointment", [
+  sheet(st.status === "requested" ? "Offer another time" : "Change appointment", [
     h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, st.a.customer + " · " + st.a.service_name + " · now " + relDay(st.date) + " " + st.time),
     h("div", { class: "rows" },
       h("div", { class: "rowf" }, h("label", { for: "mDate" }, "Date"), date),
@@ -971,7 +1187,9 @@ function moveSheet(st) {
   ], "Save change", async () => {
     await call("change_appointment", { p_id: st.a.id, p_action: "moved", p_date: date.value, p_time: time.value, p_staff_id: staff.value ? +staff.value : null, p_note: note.value });
     apptDay = date.value;
-    await sync(); toast("Moved to " + relDay(date.value) + " " + time.value);
+    await sync();
+    const moved = Object.assign({}, st, { date: date.value, time: time.value });
+    toast("Moved to " + relDay(date.value) + " " + time.value, 9000, st.a.phone ? "WhatsApp" : null, st.a.phone ? () => openWhatsApp(moved, "moved") : null);
   }, { focus: false });
 }
 function statusSheet(st, action) {
@@ -990,7 +1208,7 @@ function saleSheet(s0) {
   sh = sheet(s0.service_name, [
     h("div", { class: "card" }, saleEl(s0, D, { showDay: true })),
     s0.appointment_id ? h("button", { class: "link", type: "button", onclick: () => { sh.close(); setTimeout(() => apptSheet(s0.appointment_id), 180); } }, "Open the appointment") : null,
-    !u ? h("div", { class: "choices" }, h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: () => { sh.close(); setTimeout(() => undoSheet("sale", s0.id, saleEl(s0, derive(), { meta: false })), 180); } }, "Undo this entry…")) : null
+    !u && canUndo(s0.user_id) ? h("div", { class: "choices" }, h("button", { class: "choice red needs-net", type: "button", disabled: !online, onclick: () => { sh.close(); setTimeout(() => undoSheet("sale", s0.id, saleEl(s0, derive(), { meta: false })), 180); } }, "Undo this entry…")) : null
   ], null, null);
 }
 
@@ -1032,7 +1250,7 @@ function allItems(D) {
 function filtered(D) {
   const f = histFilter();
   return allItems(D).filter(it =>
-    (!f.type || (f.type === "undone" ? !!it.undone : it.type === f.type)) && (!f.cat || it.cat === f.cat) &&
+    (!f.type || (f.type === "undone" ? !!it.undone : f.type === "online" ? it.type === "appointment" && it.r.source === "online" : it.type === f.type)) && (!f.cat || it.cat === f.cat) &&
     (!f.staff || String(it.staff) === f.staff) && (!f.user || String(it.user) === f.user) && (!f.pay || it.pay === f.pay) &&
     (!f.from || it.day >= f.from) && (!f.to || it.day <= f.to) && (!f.text || it.text.toLowerCase().includes(f.text)))
     .sort((a, b) => b.day.localeCompare(a.day) || b.at.localeCompare(a.at));
@@ -1078,9 +1296,9 @@ function exportCSV() {
     const u = it.undone, r = it.r;
     const undoCols = [u ? "Undone" : "OK", u ? u.reason : "", u ? D.userName[u.user_id] || "" : "", u ? stampCSV(u.logged_at) : ""];
     if (it.type === "sale") lines.push(["S" + r.id, "Service done", stampCSV(r.logged_at), r.entry_date, "", "", CATS[r.category] || r.category, r.service_name, r.customer, r.phone, amt(r.amount), amt(r.list_price), PAY[r.payment], D.userName[r.staff_id], D.userName[r.user_id], r.appointment_id ? "From booking B" + r.appointment_id : "", r.note, ...undoCols].map(cell).join(sep));
-    else if (it.type === "appointment") lines.push(["B" + r.id, "Booking", stampCSV(r.logged_at), isoInTZ(r.logged_at), r.appt_date, hm(r.appt_time), CATS[r.category] || r.category, r.service_name, r.customer, r.phone, "", "", "", staffName(D, r.staff_id), D.userName[r.user_id], "Now: " + STATUS[D.appt[r.id].status], r.note, ...undoCols].map(cell).join(sep));
+    else if (it.type === "appointment") lines.push(["B" + r.id, r.source === "online" ? "Online request" : "Booking", stampCSV(r.logged_at), isoInTZ(r.logged_at), r.appt_date, hm(r.appt_time), CATS[r.category] || r.category, r.service_name, r.customer, r.phone, "", "", "", staffName(D, r.staff_id), r.source === "online" ? "Customer (online)" : D.userName[r.user_id], "Now: " + STATUS[D.appt[r.id].status], r.note, ...undoCols].map(cell).join(sep));
     else { const a = db.appts.find(x => x.id === r.appointment_id) || {};
-      lines.push(["C" + r.id, "Booking change", stampCSV(r.logged_at), isoInTZ(r.logged_at), r.new_date || a.appt_date, r.new_time ? hm(r.new_time) : hm(a.appt_time), CATS[a.category] || "", a.service_name, a.customer, a.phone, "", "", "", r.action === "moved" ? staffName(D, r.new_staff_id) : staffName(D, a.staff_id), D.userName[r.user_id], (r.action === "moved" ? "Moved" : STATUS[r.action]) + " (booking B" + r.appointment_id + ")", r.note, ...undoCols].map(cell).join(sep)); }
+      lines.push(["C" + r.id, "Booking change", stampCSV(r.logged_at), isoInTZ(r.logged_at), r.new_date || a.appt_date, r.new_time ? hm(r.new_time) : hm(a.appt_time), CATS[a.category] || "", a.service_name, a.customer, a.phone, "", "", "", r.action === "moved" ? staffName(D, r.new_staff_id) : staffName(D, a.staff_id), D.userName[r.user_id], ({ moved: "Moved", confirmed: "Confirmed", declined: "Declined", cancelled: "Cancelled", "no-show": "No-show" }[r.action]) + " (booking B" + r.appointment_id + ")", r.note, ...undoCols].map(cell).join(sep)); }
   });
   const a = h("a", { href: URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" })), download: "browtech_history_" + today() + ".csv" });
   document.body.append(a); a.click(); a.remove();
@@ -1155,12 +1373,13 @@ function renderTrends(D) {
   table($("tStaff"), "Person", group(s => s.staff_id), k => D.userName[k] || "?", null);
   table($("tPay"), "Payment", group(s => s.payment), k => PAY[k] || k, null);
   table($("tTop"), "Service", group(s => s.service_name), k => k, null, 10);
-  const ac = { booked: 0, done: 0, cancelled: 0, "no-show": 0 }; appts.forEach(st => ac[st.status]++);
-  const tot = appts.length;
+  const ac = { requested: 0, booked: 0, done: 0, declined: 0, cancelled: 0, "no-show": 0 }; appts.forEach(st => ac[st.status]++);
+  const tot = appts.length, onl = appts.filter(st => st.a.source === "online").length;
   $("tAppts").replaceChildren(tot ? h("table", { class: "t" },
     h("tr", null, h("th", null, "Outcome"), h("th", { class: "n" }, "Appointments"), h("th", { class: "n" }, "Share")),
-    [["done", "Done"], ["booked", end >= today() ? "Still open" : "Not closed (no Done / no-show)"], ["no-show", "No-show"], ["cancelled", "Cancelled"]].map(([k, l]) => h("tr", null, h("td", null, l), h("td", { class: "n" }, nf.format(ac[k])), h("td", { class: "n" }, Math.round(ac[k] / tot * 100) + "%"))),
-    h("tr", { class: "total" }, h("td", null, "Total"), h("td", { class: "n" }, nf.format(tot)), h("td", { class: "n" }, "100%")))
+    [["done", "Done"], ["booked", end >= today() ? "Confirmed, still open" : "Not closed (no Done / no-show)"], ["requested", "Waiting for confirmation"], ["no-show", "No-show"], ["cancelled", "Cancelled"], ["declined", "Declined requests"]].filter(([k]) => ac[k] || k === "done").map(([k, l]) => h("tr", null, h("td", null, l), h("td", { class: "n" }, nf.format(ac[k])), h("td", { class: "n" }, Math.round(ac[k] / tot * 100) + "%"))),
+    h("tr", { class: "total" }, h("td", null, "Total"), h("td", { class: "n" }, nf.format(tot)), h("td", { class: "n" }, "100%")),
+    h("tr", null, h("td", null, "Of these booked online"), h("td", { class: "n" }, nf.format(onl)), h("td", { class: "n" }, Math.round(onl / tot * 100) + "%")))
     : h("div", { class: "empty" }, "No appointments in this period."));
 }
 
@@ -1258,8 +1477,65 @@ function renderMore(D) {
   } else {
     $("priceView").replaceChildren(priceTable(false));
   }
+  $("bookUrl").textContent = bookLink();
+  if (me.is_admin) $("cfgSummary").replaceChildren(cfgSummary());
   $("syncInfo").textContent = "Last updated " + (db.synced ? stamp(db.synced) : "never") + ". Updates every 30 seconds while open. Times are Kumasi time.";
   setOnline(online);
+}
+const DAYS = [[1, "Mon"], [2, "Tue"], [3, "Wed"], [4, "Thu"], [5, "Fri"], [6, "Sat"], [0, "Sun"]];
+function cfgSummary() {
+  const c = db.config; if (!c) return h("div", { class: "empty" }, "Loading…");
+  return h("table", { class: "t" },
+    h("tr", null, h("td", null, "Online booking"), h("td", { class: "n" }, c.online_booking ? h("span", { class: "tag done" }, "On") : h("span", { class: "tag warn" }, "Off"))),
+    DAYS.map(([d, n]) => { const x = c.hours[String(d)]; return h("tr", null, h("td", null, n), h("td", { class: "n" + (x ? "" : " muted") }, x ? x[0] + " – " + x[1] : "Closed")); }),
+    h("tr", null, h("td", null, "Customers at the same time"), h("td", { class: "n" }, c.capacity)),
+    h("tr", null, h("td", null, "Times offered every"), h("td", { class: "n" }, c.slot_minutes + " min")),
+    h("tr", null, h("td", null, "Book up to"), h("td", { class: "n" }, c.days_ahead + " days ahead")),
+    h("tr", null, h("td", null, "Minimum notice"), h("td", { class: "n" }, c.min_notice_hours ? c.min_notice_hours + " h" : "none")),
+    h("tr", null, h("td", null, "Contact phone"), h("td", { class: "n" }, c.contact_phone || "–")));
+}
+function opts(sel, list, value) { list.forEach(([v, t]) => sel.append(h("option", { value: String(v) }, t))); sel.value = String(value); return sel; }
+function settingsSheet() {
+  const c = db.config;
+  let onl = c.online_booking ? "on" : "off";
+  const onSeg = seg({ on: "On", off: "Off" }, onl, v => onl = v);
+  const rows = DAYS.map(([d, n]) => {
+    const x = c.hours[String(d)];
+    const chk = h("input", { type: "checkbox", checked: !!x, id: "hd" + d });
+    const from = h("input", { type: "time", step: 900, value: x ? x[0] : "09:00", "aria-label": n + " opens" });
+    const to = h("input", { type: "time", step: 900, value: x ? x[1] : "19:00", "aria-label": n + " closes" });
+    const tt = h("div", { class: "tt" }, from, "–", to), cl = h("div", { class: "closed" }, "Closed");
+    const upd = () => { tt.hidden = !chk.checked; cl.hidden = chk.checked; };
+    chk.addEventListener("change", upd); upd();
+    return { d, chk, from, to, el: h("div", { class: "hourrow" }, h("label", { for: "hd" + d }, chk, n), h("div", null, tt, cl)) };
+  });
+  const cap = opts(h("select", { id: "sCap" }), [1,2,3,4,5,6,8,10].map(v => [v, v + (v === 1 ? " customer" : " customers")]), c.capacity);
+  const slot = opts(h("select", { id: "sSlot" }), [15,20,30,45,60].map(v => [v, "every " + v + " min"]), c.slot_minutes);
+  const days = opts(h("select", { id: "sDays" }), [7,14,21,30,45,60,90].map(v => [v, v + " days ahead"]), c.days_ahead);
+  const notice = opts(h("select", { id: "sNotice" }), [[0, "none"], [1, "1 hour"], [2, "2 hours"], [3, "3 hours"], [6, "6 hours"], [12, "12 hours"], [24, "1 day"], [48, "2 days"]], c.min_notice_hours);
+  const phone = h("input", { id: "sPh", type: "tel", autocomplete: "off", value: c.contact_phone || "", placeholder: "Shown to customers" });
+  sheet("Booking settings", [
+    h("div", { class: "blk" }, h("span", { class: "lbl" }, "Customers can request appointments online"), onSeg),
+    h("div", { class: "lbl" }, "Opening hours"),
+    h("div", { class: "rows" }, rows.map(r => r.el)),
+    h("div", { class: "rows" },
+      h("div", { class: "rowf" }, h("label", { for: "sCap" }, "At the same time"), cap),
+      h("div", { class: "rowf" }, h("label", { for: "sSlot" }, "Times offered"), slot),
+      h("div", { class: "rowf" }, h("label", { for: "sDays" }, "Book up to"), days),
+      h("div", { class: "rowf" }, h("label", { for: "sNotice" }, "Min. notice"), notice),
+      h("div", { class: "rowf" }, h("label", { for: "sPh" }, "Contact phone"), phone)),
+    h("p", { class: "hint" }, "“At the same time” = how many customers can be served together. A time is only offered if there is still a free place for the whole length of the service.")
+  ], "Save", async () => {
+    const hours = {};
+    rows.forEach(r => { hours[r.d] = r.chk.checked ? [r.from.value.slice(0, 5), r.to.value.slice(0, 5)] : null; if (r.chk.checked && !(r.from.value < r.to.value)) throw new Error("Check the hours: opening must be before closing"); });
+    await call("save_settings", { p_online: onl === "on", p_slot: +slot.value, p_capacity: +cap.value, p_days: +days.value, p_notice: +notice.value, p_phone: phone.value, p_hours: hours });
+    await sync(); toast("Booking settings saved");
+  }, { focus: false });
+}
+async function shareBookLink() {
+  const url = bookLink();
+  try { if (navigator.share) { await navigator.share({ title: "BrowTech Kumasi", text: "Book your appointment at BrowTech Kumasi:", url }); return; } } catch (e) { if (e.name === "AbortError") return; }
+  try { await navigator.clipboard.writeText(url); toast("Link copied"); } catch (e) { prompt("Copy this link:", url); }
 }
 function priceTable(editable) {
   const box = h("div");
@@ -1268,7 +1544,7 @@ function priceTable(editable) {
     if (!svcs.length) return;
     box.append(h("div", { class: "lbl", style: "margin-top:12px" }, h("span", { class: "key", style: "background:var(--c-" + c + ")" }), CATS[c]));
     box.append(h("div", null, svcs.map(s => h("div", { class: "entry noico" + (editable ? " tap" : "") + (s.active ? "" : " dim"), onclick: editable ? () => serviceSheet(s) : null },
-      h("div", { class: "main" }, h("div", { class: "ttl", style: "font-weight:500" }, s.name, s.active ? null : h("span", { class: "tag" }, "hidden"))),
+      h("div", { class: "main" }, h("div", { class: "ttl", style: "font-weight:500" }, s.name, s.active ? null : h("span", { class: "tag" }, "hidden"), s.active && !s.online && editable ? h("span", { class: "tag" }, "not online") : null), h("div", { class: "sub small" }, durText(s.duration_min || 60))),
       h("div", { class: "amt", style: "font-weight:500" + (s.price > 0 ? "" : ";color:var(--text3)") }, s.price > 0 ? money(s.price) : "no price")))));
   });
   return box;
@@ -1278,14 +1554,18 @@ function serviceSheet(s) {
   cat.value = s ? s.category : CAT_KEYS[0];
   const nm = h("input", { id: "pName", autocomplete: "off", value: s ? s.name : "" });
   const price = h("input", { id: "pPrice", inputmode: "decimal", autocomplete: "off", value: s && s.price > 0 ? String(s.price) : "", placeholder: "0 = no fixed price" });
-  let shown = s ? s.active : true;
+  let shown = s ? s.active : true, onl = s ? s.online !== false : true;
   const vis = seg({ yes: "Shown", no: "Hidden" }, shown ? "yes" : "no", v => shown = v === "yes");
+  const onSeg = seg({ yes: "Yes", no: "No" }, onl ? "yes" : "no", v => onl = v === "yes");
+  const dur = opts(h("select", { id: "pDur" }), [15,20,30,45,60,75,90,105,120,150,180,210,240,300,360,480].map(v => [v, durText(v)]), s ? s.duration_min || 60 : 60);
   sheet(s ? "Change service" : "Add service", [
     field("Category", cat), field("Name", nm), field("Price (GH₵)", price, "Leave empty if the price differs every time."),
+    field("Takes about", dur, "Used to find free times on the booking page."),
+    h("div", { class: "blk" }, h("span", { class: "lbl" }, "Customers can book it online"), onSeg),
     s ? h("div", { class: "blk" }, h("span", { class: "lbl" }, "In the service list"), vis, h("div", { class: "hint" }, "Hidden services stay in old entries but can't be picked for new ones.")) : null
   ], s ? "Save" : "Add", async () => {
     let p = 0; if (price.value.trim()) p = readMoney(price);
-    const r = await call("save_service", { p_id: s ? s.id : null, p_category: cat.value, p_name: nm.value, p_price: p, p_active: shown });
+    const r = await call("save_service", { p_id: s ? s.id : null, p_category: cat.value, p_name: nm.value, p_price: p, p_active: shown, p_duration: +dur.value, p_online: onl });
     await sync(); toast(r.changed === false ? "Nothing changed" : "Price list saved");
   });
 }
@@ -1507,10 +1787,152 @@ async function downloadTrendsPdf() {
   finally { btn.disabled = false; btn.textContent = "Download PDF"; }
 }
 
+/* ================= customer booking page ================= */
+const durText = m => m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : "");
+const bk = { info: null, cat: null, svc: null, day: null, time: null, loadingSlots: 0, sent: null };
+const bookLink = () => location.origin + location.pathname;
+function waNumber(phone) {
+  let d = (phone || "").replace(/\D/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.startsWith("0")) d = "233" + d.slice(1);
+  else if (d.length === 9) d = "233" + d;
+  return d;
+}
+const waLink = (phone, text) => "https://wa.me/" + waNumber(phone) + (text ? "?text=" + encodeURIComponent(text) : "");
+async function showBook() {
+  $("login").hidden = true; $("app").hidden = true; $("book").hidden = false; $("bookbar").hidden = false;
+  document.title = "BrowTech Kumasi – Book an appointment";
+  $("staffLink").textContent = session ? "Staff area (" + session.user.name + ")" : "Staff login";
+  if (bk.sent) return;
+  try {
+    bk.info = await rpc("public_info", {});
+    $("bkLoading").hidden = true;
+    if (!bk.info.online_booking || !bk.info.services.length) {
+      const ph = bk.info.contact_phone;
+      $("bkError").replaceChildren(h("h2", null, "Online booking is closed at the moment"),
+        h("p", { class: "muted", style: "margin:0 0 12px" }, ph ? "Please call or WhatsApp us to book." : "Please contact us to book."),
+        ph ? h("div", { class: "row" }, h("a", { class: "btn secondary", href: "tel:" + ph.replace(/[^\d+]/g, "") }, "Call"), h("a", { class: "btn secondary", href: waLink(ph), target: "_blank", rel: "noopener" }, "WhatsApp")) : null);
+      $("bkError").hidden = false; $("bookbar").hidden = true; return;
+    }
+    $("bkForm").hidden = false;
+    const cats = CAT_KEYS.filter(c => bk.info.services.some(x => x.category === c));
+    if (!bk.cat || !cats.includes(bk.cat)) bk.cat = cats[0];
+    renderBook();
+  } catch (e) {
+    $("bkLoading").hidden = true;
+    $("bkError").replaceChildren(h("p", { style: "margin:0 0 12px" }, e.message), h("button", { class: "btn secondary", type: "button", onclick: () => showBook() }, "Try again"));
+    $("bkError").hidden = false;
+  }
+}
+function openDays() {
+  const out = [], t = bk.info.today;
+  for (let i = 0; i <= bk.info.days_ahead; i++) {
+    const d = addDays(t, i), hrs = bk.info.hours[String(fromISO(d).getDay())];
+    if (hrs) out.push(d);
+  }
+  return out;
+}
+function renderBook() {
+  const info = bk.info;
+  const cats = CAT_KEYS.filter(c => info.services.some(x => x.category === c));
+  $("bkCats").replaceChildren(...cats.map(c => h("button", { class: "pill press", type: "button", "aria-pressed": String(c === bk.cat), onclick: () => { bk.cat = c; renderBook(); } },
+    h("i", { style: "background:var(--c-" + c + ")" }), CATS[c])));
+  $("bkServices").replaceChildren(...info.services.filter(x => x.category === bk.cat).map(x => h("button", { class: "svc", type: "button", role: "radio", "aria-checked": String(!!bk.svc && bk.svc.id === x.id),
+      onclick: () => { if (bk.svc && bk.svc.id === x.id) return; bk.svc = x; bk.time = null; if (!bk.day) bk.day = openDays()[0] || null; renderBook(); loadSlots(); setTimeout(() => $("bkStep2").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }), 60); } },
+    h("span", { class: "radio", "aria-hidden": "true" }),
+    h("span", null, h("div", { class: "nm" }, x.name), h("div", { class: "du" }, durText(x.duration_min))),
+    x.price > 0 ? h("span", { class: "pr" }, money(x.price)) : h("span", { class: "pr na" }, "Price on request"))));
+  $("bkStep2").classList.toggle("off", !bk.svc); $("bkStep3").classList.toggle("off", !bk.svc || !bk.day); $("bkStep4").classList.toggle("off", !bk.time);
+  const days = openDays();
+  const strip = $("bkDays"), keep = strip.scrollLeft;
+  strip.replaceChildren(...days.map(d => { const dt = fromISO(d); return h("button", { class: "daychip press", type: "button", "aria-pressed": String(d === bk.day), "aria-label": longDay(d),
+      onclick: () => { if (bk.day === d) return; bk.day = d; bk.time = null; renderBook(); loadSlots(); } },
+    h("span", { class: "dw" }, d === info.today ? "Today" : dt.toLocaleDateString("en-GB", { weekday: "short" })),
+    h("span", { class: "dn" }, dt.getDate()),
+    h("span", { class: "dc" }, dt.toLocaleDateString("en-GB", { month: "short" }))); }));
+  strip.scrollLeft = keep;
+  renderSlots();
+  updateBookBar();
+}
+let slotCache = {};
+async function loadSlots() {
+  if (!bk.svc || !bk.day) return;
+  const key = bk.svc.id + "|" + bk.day, ticket = ++bk.loadingSlots;
+  if (!slotCache[key]) { slotCache[key] = "loading"; renderSlots(); }
+  try {
+    const list = await rpc("public_slots", { p_service_id: bk.svc.id, p_date: bk.day });
+    slotCache[key] = list;
+  } catch (e) { slotCache[key] = { error: e.message }; }
+  if (ticket === bk.loadingSlots) renderSlots();
+}
+function renderSlots() {
+  const box = $("bkTimes");
+  if (!bk.svc || !bk.day) { box.replaceChildren(h("p", { class: "hint slotnote" }, "Choose a service and a day first.")); return; }
+  const v = slotCache[bk.svc.id + "|" + bk.day];
+  if (!v || v === "loading") { box.replaceChildren(h("p", { class: "hint slotnote" }, "Looking for free times…")); return; }
+  if (v.error) { box.replaceChildren(h("p", { class: "err slotnote" }, v.error)); return; }
+  if (!v.length) { box.replaceChildren(h("p", { class: "hint slotnote" }, "No free times on " + longDay(bk.day) + ". Please choose another day.")); return; }
+  box.replaceChildren(...v.map(t => h("button", { class: "slot press", type: "button", "aria-pressed": String(t === bk.time),
+    onclick: () => { bk.time = t; renderBook(); if (!$("bkName").value) setTimeout(() => $("bkStep4").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }), 60); } }, t)));
+}
+function updateBookBar() {
+  const name = $("bkName").value.trim(), phone = $("bkPhone").value.replace(/\D/g, "");
+  const sum = $("bkSum"); sum.innerHTML = "";
+  if (!bk.svc) sum.append(h("b", null, "Choose a service"), "then a day and time");
+  else sum.append(h("b", null, bk.svc.name + (bk.svc.price > 0 ? " · " + money(bk.svc.price) : "")), bk.day ? relDay(bk.day) + (bk.time ? " at " + bk.time : " · choose a time") : "Choose a day");
+  $("bkSend").disabled = !(bk.svc && bk.day && bk.time && name.length >= 2 && phone.length >= 9);
+}
+async function sendBooking() {
+  const btn = $("bkSend"); $("bkErr").hidden = true;
+  if (!$("bkName").value.trim()) { nudge($("bkName")); return; }
+  btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    const r = await rpc("public_request", { p_service_id: bk.svc.id, p_date: bk.day, p_time: bk.time, p_name: $("bkName").value, p_phone: $("bkPhone").value, p_note: $("bkNote").value, p_website: $("bkWebsite").value });
+    haptic();
+    bk.sent = { ref: r.ref, svc: bk.svc, day: bk.day, time: bk.time, name: $("bkName").value.trim() };
+    showBookDone();
+  } catch (e) {
+    $("bkErr").textContent = e.message; $("bkErr").hidden = false;
+    if (/no longer free/.test(e.message)) { bk.time = null; delete slotCache[bk.svc.id + "|" + bk.day]; renderBook(); loadSlots(); $("bkStep3").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth" }); }
+  } finally { btn.textContent = "Request"; updateBookBar(); }
+}
+function showBookDone() {
+  const x = bk.sent, ph = bk.info.contact_phone;
+  $("bkForm").hidden = true; $("bookbar").hidden = true; $("bkDone").hidden = false;
+  $("bkDone").replaceChildren(h("div", { class: "card donecard" },
+    h("div", { class: "big", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>' }),
+    h("h2", null, "Request sent"),
+    h("p", { class: "muted", style: "margin:0 0 16px" }, "Thank you, " + x.name + ". We will confirm by phone or WhatsApp soon."),
+    h("table", { class: "t", style: "text-align:left" },
+      h("tr", null, h("td", null, "Service"), h("td", { class: "n" }, x.svc.name)),
+      h("tr", null, h("td", null, "When"), h("td", { class: "n" }, longDay(x.day) + ", " + x.time)),
+      h("tr", null, h("td", null, "Takes about"), h("td", { class: "n" }, durText(x.svc.duration_min))),
+      x.svc.price > 0 ? h("tr", null, h("td", null, "Price"), h("td", { class: "n" }, money(x.svc.price))) : null,
+      h("tr", null, h("td", null, "Reference"), h("td", { class: "n" }, x.ref))),
+    ph ? h("div", { class: "row", style: "margin-top:16px" }, h("a", { class: "btn secondary", href: "tel:" + ph.replace(/[^\d+]/g, "") }, "Call us"), h("a", { class: "btn secondary", href: waLink(ph, "Hello, I just requested an appointment (" + x.ref + ") for " + x.svc.name + " on " + longDay(x.day) + " at " + x.time + "."), target: "_blank", rel: "noopener" }, "WhatsApp us")) : null),
+    h("button", { class: "link", type: "button", onclick: () => { bk.sent = null; bk.svc = null; bk.time = null; slotCache = {}; $("bkNote").value = ""; $("bkDone").hidden = true; showBook(); } }, "Book another appointment"));
+  window.scrollTo(0, 0);
+}
+["bkName", "bkPhone"].forEach(id => $(id).addEventListener("input", updateBookBar));
+$("bkSend").onclick = sendBooking;
+
+/* ================= which page: customer booking (default) or staff (#staff) ================= */
+const staffMode = () => location.hash === "#staff";
+function route() {
+  $("manifestLink").href = staffMode() ? "manifest.webmanifest" : "manifest-book.webmanifest";
+  document.querySelectorAll(".sheet, .scrim").forEach(w => w.remove());
+  if (!staffMode()) { clearInterval(pollTimer); showBook(); return; }
+  $("book").hidden = true; $("bookbar").hidden = true;
+  document.title = "BrowTech Kumasi – Staff";
+  if (!CFG.url || !CFG.key) { $("setup").hidden = false; return; }
+  if (session) startApp(); else showLogin();
+}
+window.addEventListener("hashchange", route);
+
 /* ================= login ================= */
 let loginUser = null, pinVal = "";
 async function showLogin(msg) {
-  $("app").hidden = true; $("login").hidden = false; $("loginPin").hidden = true; $("loginUsers").hidden = false;
+  $("app").hidden = true; $("book").hidden = true; $("bookbar").hidden = true; $("login").hidden = false; $("loginPin").hidden = true; $("loginUsers").hidden = false;
   $("loginSub").textContent = "Who's using the app?";
   const box = $("userBtns"); box.innerHTML = "";
   $("usersErr").hidden = !msg; $("usersErr").textContent = msg || "";
@@ -1598,12 +2020,13 @@ function checkSessionAge() {
 let lastDay = null;
 function startApp() {
   if (checkSessionAge()) return;
-  $("login").hidden = true; $("app").hidden = false;
+  $("login").hidden = true; $("book").hidden = true; $("bookbar").hidden = true; $("app").hidden = false;
   apptDay = today(); lastDay = today();
   render(); sync();
   clearInterval(pollTimer);
   pollTimer = setInterval(() => {
     if (lastDay !== today()) { lastDay = today(); apptDay = today(); shownMoney = undefined; }
+    if (!staffMode()) return;
     if (document.visibilityState === "visible") sync(); else updateAgo();
   }, 30000);
 }
@@ -1611,7 +2034,7 @@ function startApp() {
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 $("btnSale").onclick = () => saleFormSheet();
 $("btnBook").onclick = bookSheet;
-$("cardIncome").onclick = todaySheet;
+$("cardIncome").onclick = () => { if (isAdmin()) todaySheet(); else if (!$("reqArea").hidden) $("reqHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); else toast("No requests waiting"); };
 $("cardAppts").onclick = () => { apptDay = today(); render(); $("apptHead").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); };
 $("seeAll").onclick = () => showTab("history");
 ["fText", "fType", "fCat", "fStaff", "fUser", "fPay", "fFrom", "fTo"].forEach(id => $(id).addEventListener("input", () => { histLimit = 80; render(); }));
@@ -1630,16 +2053,17 @@ $("changePinBtn").onclick = changePinSheet;
 $("logoutBtn").onclick = async () => { if (!confirm("Log out?")) return; try { await rpc("logout", { p_token: session.token }); } catch (e) {} endSession(); };
 $("addUserBtn").onclick = addUserSheet;
 $("addSvcBtn").onclick = () => serviceSheet(null);
+$("cfgBtn").onclick = () => db.config && settingsSheet();
+$("shareLink").onclick = shareBookLink;
 $("reloadAll").onclick = async () => { await sync(true); toast("All data reloaded"); };
 $("pinGo").onclick = doLogin;
 $("pinBack").onclick = () => showLogin();
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && session) sync(); });
-window.addEventListener("online", () => session && sync());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && session && staffMode()) sync(); });
+window.addEventListener("online", () => session && staffMode() && sync());
 let rT; window.addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(() => { if (currentTab === "trends") render(); }, 150); });
 
 if (!CFG.url || !CFG.key) { $("setup").hidden = false; }
-else if (session) startApp();
-else showLogin();
+else route();
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));

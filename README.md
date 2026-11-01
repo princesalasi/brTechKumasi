@@ -1,18 +1,28 @@
 # BrowTech Kumasi
 
-App for BrowTech Kumasi (pony, piercing, brows, tattoo, lashes, nails): services done, income and appointments.
+Booking page and staff app for BrowTech Kumasi (pony, piercing, brows, tattoo, lashes, nails).
 
-- Each person logs in with their own **6-digit PIN**. Each phone stays logged in for **2 weeks**.
-- **Service done**: pick the service from the price list – the price fills in automatically and can be changed for one customer. Choose who did it and how the customer paid (Cash, MoMo, Card / bank).
-- **Appointments**: book, move, cancel, mark "customer didn't come", or tap **Done** to record the service and payment.
-- Every entry is **permanent** and logged with who and when. Mistakes are fixed with **Undo** (a reason is required); undone entries stay visible in red.
-- **History** (filters, CSV in English format), **Trends** (charts, custom dates, PDF), **More** (PIN change; admin: people, price list, activity log).
+**Three parts, one link:**
+
+| Who | Address | What they can do |
+|---|---|---|
+| **Customers** | https://princesalasi.github.io/brTechKumasi/ | Choose a service (with price and duration), a day and a **free** time, enter name and phone → sends a **request**. No login. |
+| **Workers** | …/brTechKumasi/#staff (PIN) | New requests (confirm / decline, ready WhatsApp message), appointments, book by phone, **Service done**. They see only their own entries of today – no income. |
+| **Admin** | …/brTechKumasi/#staff (PIN) | Everything above plus **History** (filters, CSV), **Trends** (charts, PDF) and **More**: people, price list (price, duration, bookable online), booking settings (opening hours, customers at the same time, how far ahead, minimum notice, contact phone), activity log. |
+
+- Each person logs in with their own **6-digit PIN**; each phone stays logged in for **2 weeks**.
+- Every entry is **permanent** and logged with who and when. Mistakes are fixed with **Undo** (reason required); undone entries stay visible in red. Workers can only undo their own entries.
+- Customers only see times where there is still a free place for the **whole length** of the service (opening hours + "customers at the same time"). Requests and confirmed bookings both take a place; declined/cancelled ones free it again.
+- Spam protection: hidden robot trap, max. 3 open requests per phone number, max. 40 online requests per hour.
 - All days and times are **Kumasi time**, even on a phone set to another time zone.
 
 The page is hosted free on GitHub Pages; the data lives in a free Supabase database.
-App address: **https://princesalasi.github.io/brTechKumasi/**
 
 ## One-time setup
+
+### Updating the database after a new version
+Open `setup.sql` (newest version), copy everything, paste it into Supabase **SQL Editor → New query → Run**.
+It keeps people, PINs, prices and all entries. The result says `Setup is up to date`.
 
 ### 1. Database (Supabase)
 1. On [supabase.com](https://supabase.com) → **New project** (free plan). Name it e.g. `BrowTech`, region **West EU (Ireland)** or **Central EU (Frankfurt)**, set a database password (keep it somewhere safe – the app doesn't need it).
@@ -38,19 +48,21 @@ After a minute the app is at https://princesalasi.github.io/brTechKumasi/
 The free Supabase project pauses after a week without use. The job in `.github/workflows/keep-awake.yml` pings it every 3 days.
 Check it once: repo **Actions** tab → *Keep database awake* → **Run workflow**. It should turn green (it can only work after step 2).
 
-### 5. Prices and people
-Log in as the admin →
-- **More → Price list**: tap each service to set its price, or **Add service**. Hide services you don't offer.
+### 5. Prices, booking settings and people
+Log in as the admin (…/brTechKumasi/#staff) →
+- **More → Online booking → Change booking settings**: opening hours, how many customers can be served at the same time, how far ahead and how short-notice customers can book, the phone number shown to customers.
+- **More → Price list**: tap each service to set its price and how long it takes, or **Add service**. Hide services you don't offer, or switch off "bookable online" for ones that need a consultation first.
 - **More → People → Add person**: name and 6-digit PIN for everyone. Everyone can change their own PIN under **More**.
 
-### 6. Home screen
-- **iPhone**: open the app address in **Safari** → **Share** → **Add to Home Screen**.
-- **Android**: open it in **Chrome** → **⋮** → **Add to Home screen** / **Install app**.
+### 6. Share the booking link, install the staff app
+- Customers: share https://princesalasi.github.io/brTechKumasi/ (More → **Share link**) on WhatsApp status, Instagram bio, Google Business profile.
+- Staff phones: open **…/brTechKumasi/#staff** → iPhone: **Safari → Share → Add to Home Screen**; Android: **Chrome → ⋮ → Install app**. The icon then opens straight to the staff login.
 
 ### 7. Fresh start after testing (optional)
 When you have finished trying things out, run `tools/clear_test_entries.sql` once in the Supabase SQL Editor. It deletes all services, bookings and the activity log, but keeps people, PINs and the price list.
 
 ## How it works
+- **Requests**: confirm (optionally choose who does it), decline, or "offer another time" (move). After each, the app offers a ready WhatsApp message to the customer.
 - **Undo**: services, bookings and booking changes can each be undone with a reason. An appointment marked *Done* must have its service entry undone first. For a moved/cancelled appointment, the newest change is undone first.
 - **Free services**: enter amount 0 – it is saved as *Free*.
 - **Other service**: not on the price list? Choose *Other service* and type it.
@@ -67,7 +79,7 @@ When you have finished trying things out, run `tools/clear_test_entries.sql` onc
 | `config.js` | Supabase URL and public key |
 | `setup.sql` | Database setup – run once in Supabase |
 | `tools/clear_test_entries.sql` | Optional one-time fresh start after testing |
-| `sw.js`, `manifest.webmanifest`, `icon-*.png`, `apple-touch-icon.png`, `logo.svg` | Home-screen app, logo and offline support |
+| `sw.js`, `manifest.webmanifest` (staff app), `manifest-book.webmanifest` (booking page), `icon-*.png`, `apple-touch-icon.png`, `logo.svg` | Home-screen app, logo and offline support |
 | `.github/workflows/keep-awake.yml` | Keeps the free database from pausing |
 
 When you change `index.html`, also change `VERSION` in `sw.js` so phones load the new version.
