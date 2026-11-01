@@ -425,6 +425,15 @@ language sql stable as $$
    order by d limit 3;
 $$;
 
+-- Staff can book today if the shop is open, and the same next 3 open days
+create or replace function browtech.staff_days() returns setof date
+language sql stable as $$
+  select browtech.today() from browtech.config c
+   where c.id = 1 and jsonb_typeof(c.hours -> extract(dow from browtech.today())::int::text) = 'array'
+  union all
+  select browtech.bookable_days();
+$$;
+
 -- Services, prices and opening hours for the booking page
 create or replace function public.public_info() returns json
 language sql stable security definer set search_path = browtech, public as $$
@@ -639,6 +648,7 @@ begin
   u := browtech.me(p_token);
   select * into sv from browtech.pick_services(p_service_ids, p_other_category, p_other_name, false);
   perform browtech.check_appt_date(p_date, p_time);
+  if p_date not in (select browtech.staff_days()) then raise exception 'Appointments can only be for today and the next 3 working days'; end if;
   perform browtech.check_staff(p_staff_id, false);
   if p_customer is null or btrim(p_customer) = '' then raise exception 'Enter the customer''s name'; end if;
   insert into browtech.appointments(user_id, source, appt_date, appt_time, service_id, category, service_name, staff_id, customer, phone, note, duration_min, services)
@@ -664,6 +674,7 @@ begin
   if p_action in ('moved','confirmed') then perform browtech.check_staff(p_staff_id, false); end if;
   if p_action = 'moved' then
     perform browtech.check_appt_date(p_date, p_time);
+    if p_date <> a.appt_date and p_date not in (select browtech.staff_days()) then raise exception 'Appointments can only be for today and the next 3 working days'; end if;
     if p_date = a.appt_date and p_time = a.appt_time and p_staff_id is not distinct from a.staff_id then raise exception 'Nothing was changed'; end if;
   end if;
   insert into browtech.appt_changes(user_id, appointment_id, action, new_date, new_time, new_staff_id, note)

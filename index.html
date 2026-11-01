@@ -967,11 +967,19 @@ function requestRow(st, D) {
         h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: () => confirmSheet(st) }, "Confirm"),
         h("button", { class: "btn small danger needs-net", type: "button", disabled: !online, onclick: () => declineSheet(st) }, "Decline"))));
 }
+// days staff can book: today if open, then the next 3 days the shop is open (same rule as browtech.staff_days)
+function staffDays() {
+  const hours = (db.config || {}).hours || {}, t = today(), open = d => hours[String(fromISO(d).getDay())];
+  const out = open(t) ? [t] : [];
+  for (let i = 1, n = 0; i <= 14 && n < 3; i++) { const d = addDays(t, i); if (open(d)) { out.push(d); n++; } }
+  return out;
+}
+const STAFF_DAYS_ERR = "Appointments can only be for today and the next 3 working days";
 function renderDays(D) {
   const strip = $("dayStrip"), t = today();
   const count = {};
   Object.values(D.appt).forEach(st => { if (LIVE(st)) count[st.date] = (count[st.date] || 0) + 1; });
-  const days = []; for (let i = 0; i < 14; i++) days.push(addDays(t, i));
+  const days = [t].concat(staffDays().filter(d => d !== t));
   if (!days.includes(apptDay)) days.unshift(apptDay);
   const prevScroll = strip.scrollLeft;
   strip.innerHTML = "";
@@ -1289,8 +1297,9 @@ function bookSheet() {
   const chosen = []; let other = null;
   const list = h("div", { class: "group", style: "margin-bottom:10px" });
   const addWrap = h("div", { class: "field" });
-  const date = h("input", { id: "bDate", type: "date", value: apptDay && apptDay >= today() ? apptDay : today(), min: today() });
-  const time = h("input", { id: "bTime", type: "time", step: 300, value: apptDay && apptDay > today() ? "10:00" : nextSlot() });
+  const days = staffDays();
+  const date = h("input", { id: "bDate", type: "date", value: days.includes(apptDay) ? apptDay : days[0] || today(), min: today(), max: days[days.length - 1] });
+  const time = h("input", { id: "bTime", type: "time", step: 300, value: date.value > today() ? "10:00" : nextSlot() });
   const staff = staffSelect("bStaff", null, true);
   const note = h("input", { id: "bNote", autocomplete: "off", placeholder: "Optional" });
   const free = h("div", { class: "slots", style: "margin:0 0 14px" });
@@ -1340,6 +1349,7 @@ function bookSheet() {
     if (other && !other.cat.value) { nudge(other.cat); throw new Error("Choose the category of the other service"); }
     if (other && !other.nm.value.trim()) { nudge(other.nm); throw new Error("Type the name of the other service"); }
     if (!date.value) throw new Error("Choose the date");
+    if (!days.includes(date.value)) throw new Error(STAFF_DAYS_ERR);
     if (!/^\d{2}:\d{2}/.test(time.value)) throw new Error("Choose the time");
     const r = await call("book_appointment", { p_service_ids: chosen.map(x => x.id), p_other_category: other ? other.cat.value : null, p_other_name: other ? other.nm.value.trim() : null,
       p_date: date.value, p_time: time.value, p_staff_id: staff.value ? +staff.value : null, p_customer: cust.value, p_phone: phone.value, p_note: note.value });
@@ -1434,7 +1444,8 @@ function declineSheet(st) {
   }, { danger: true, focus: false });
 }
 function moveSheet(st) {
-  const date = h("input", { id: "mDate", type: "date", value: st.date, min: today() });
+  const days = staffDays(), last = days[days.length - 1];
+  const date = h("input", { id: "mDate", type: "date", value: st.date, min: today(), max: last && st.date > last ? st.date : last });
   const time = h("input", { id: "mTime", type: "time", step: 300, value: st.time });
   const staff = staffSelect("mStaff", st.staff, true);
   const note = h("input", { id: "mNote", autocomplete: "off", placeholder: "Optional, e.g. customer asked" });
@@ -1446,6 +1457,7 @@ function moveSheet(st) {
       h("div", { class: "rowf" }, h("label", { for: "mStaff" }, "With"), staff),
       h("div", { class: "rowf" }, h("label", { for: "mNote" }, "Note"), note))
   ], "Save change", async () => {
+    if (date.value !== st.date && !days.includes(date.value)) throw new Error(STAFF_DAYS_ERR);
     await call("change_appointment", { p_id: st.a.id, p_action: "moved", p_date: date.value, p_time: time.value, p_staff_id: staff.value ? +staff.value : null, p_note: note.value });
     apptDay = date.value;
     await sync();
