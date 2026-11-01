@@ -151,7 +151,19 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 @media (prefers-color-scheme: dark) { .entry.struck { background: rgba(255,105,97,.12); } }
 .entry.struck .ttl, .entry.struck .amt, .entry.struck .time { text-decoration: line-through; color: var(--red); }
 .entry.struck .ico { background: var(--red); }
-.entry.dim .ttl, .entry.dim .time { color: var(--text2); }
+/* appointment and service status: green completed, yellow upcoming, red cancelled */
+#recent .entry:not(.struck), #wkRecent .entry:not(.struck), .entry.s-done { background: rgba(26,127,55,.12); box-shadow: inset 4px 0 var(--green); }
+#recent .entry:not(.struck) .ico, #wkRecent .entry:not(.struck) .ico { background: var(--green); }
+.entry.s-up { background: rgba(255,204,0,.22); box-shadow: inset 4px 0 #f5c400; }
+.entry.s-off { background: rgba(215,0,21,.09); box-shadow: inset 4px 0 var(--red); }
+.entry.s-off .ttl, .entry.s-off .time { color: var(--red); }
+.entry.s-off .tag.warn { background: var(--red); color: #fff; }
+@media (prefers-color-scheme: dark) {
+  #recent .entry:not(.struck), #wkRecent .entry:not(.struck), .entry.s-done { background: rgba(50,215,75,.14); }
+  #recent .entry:not(.struck) .ico, #wkRecent .entry:not(.struck) .ico { background: #1a7f37; }
+  .entry.s-up { background: rgba(255,214,10,.16); box-shadow: inset 4px 0 #ffd60a; }
+  .entry.s-off { background: rgba(255,105,97,.14); }
+}
 .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 9px; background: var(--fill); color: var(--text2); margin-left: 6px; font-weight: 600; vertical-align: 2px; letter-spacing: 0; text-decoration: none; }
 .tag.undone { background: var(--red); color: #fff; }
 .tag.done { background: rgba(26,127,55,.14); color: var(--green); }
@@ -501,8 +513,7 @@ details.f[open] > summary { margin-bottom: 12px; }
         <span><span class="sbig" id="apptToday">0</span><span class="ssub" id="apptSub" style="display:block"></span></span>
       </button>
     </div>
-    <div class="ops">
-      <button class="op main press needs-net" id="btnSale" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>Service done</button>
+    <div class="ops" style="grid-template-columns:1fr">
       <button class="op alt press needs-net" id="btnBook" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>Book</button>
     </div>
 
@@ -1033,7 +1044,7 @@ function apptRow(st, D) {
   const toggle = () => { if (open) apptOpen.delete(a.id); else apptOpen.add(a.id); render(); };
   const stop = e => e.stopPropagation();
   const svcs = apptServices(a), tot = svcs.reduce((t, x) => t + cents(x.price || 0), 0), tel = (a.phone || "").replace(/[^\d+]/g, "");
-  return h("div", { class: "entry tap" + (off ? " dim" : ""), role: "button", tabindex: "0", "aria-expanded": String(open), onclick: toggle,
+  return h("div", { class: "entry tap " + (off ? "s-off" : st.status === "done" ? "s-done" : "s-up"), role: "button", tabindex: "0", "aria-expanded": String(open), onclick: toggle,
       onkeydown: e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } } },
     h("div", { class: "time" }, st.time),
     h("div", { class: "main" },
@@ -2377,7 +2388,6 @@ function startApp() {
 }
 
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
-$("btnSale").onclick = () => saleFormSheet();
 $("btnBook").onclick = () => bookSheet();
 $("wkPay").onclick = walkinPay;
 initSwitch($("modeSwitch"), setMode);
