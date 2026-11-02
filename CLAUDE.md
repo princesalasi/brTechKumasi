@@ -7,7 +7,7 @@ Built to match the owner's earlier app `princesalasi/sakal_stocks` (same structu
 One static page (`index.html`, no build step, no libraries) on GitHub Pages: https://princesalasi.github.io/brTechKumasi/
 Data in Supabase (free plan), project `bgfuyharbxpzdtdgaakv` (URL + publishable key in `config.js`). The website only calls SQL functions (RPC); tables live in a private schema `browtech`.
 
-Booking page gallery: a strip of style ideas for the chosen category (`GALLERY` in `index.html`), images supplied by the owner in `gallery/` plus free stock photos loaded from Pexels, labelled as not all the shop's own work. Swap in the shop's own photos when available.
+Booking page gallery: a strip of style ideas for the chosen category, kept in `browtech.gallery`. Admins change it in More > Gallery (add, remove, hold and drag, 12 per category). The phone shrinks uploads, which are stored in the database as a small thumbnail plus a larger image fetched on tap. Older rows point to files in `gallery/` or Pexels photos; `GALLERY` in `index.html` is only the fallback when the database can't answer.
 
 A swipeable Client / Staff switch moves between the parts: top of the booking page, the login page and the More tab. Staff still needs a PIN unless already logged in on that device.
 

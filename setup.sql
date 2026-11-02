@@ -820,6 +820,102 @@ begin
   return json_build_object('ok', true, 'changed', true);
 end $$;
 
+-- Booking page gallery. Built-in photos have a ref (a file in gallery/ or a Pexels number); uploaded ones hold the images themselves.
+alter table browtech.config add column if not exists gallery_seeded boolean not null default false;
+create table if not exists browtech.gallery (
+  id serial primary key,
+  category text not null check (category in ('brows','lashes','nails','tattoo','piercing','pony')),
+  ref text,
+  alt text not null default 'Style idea',
+  thumb text,
+  data text,
+  sort_order int,
+  added_at timestamptz not null default now()
+);
+do $$
+begin
+  if not (select gallery_seeded from browtech.config where id = 1) then
+    insert into browtech.gallery(category, ref, alt, sort_order) values
+      ('brows', 'brows-steps.jpg', 'Brow shaping, step by step', 1),
+      ('brows', 'brows-makeup.jpg', 'Sharp brows with soft pink makeup', 2),
+      ('brows', '18656575', 'Defined brows with soft studio makeup', 3),
+      ('brows', '17298907', 'Sharp brows with gold eye makeup', 4),
+      ('brows', '33644901', 'Clean arched brows, eyes closed', 5),
+      ('brows', '3373735', 'Close-up of a natural brow', 6),
+      ('lashes', 'lashes-volume.jpg', 'Full volume lash set', 1),
+      ('lashes', '21412169', 'Close-up of volume lash extensions', 2),
+      ('lashes', '20765765', 'Defined lashes with pink eye makeup', 3),
+      ('lashes', '7298696', 'Long natural lashes', 4),
+      ('lashes', '3724431', 'Close-up of long lashes in daylight', 5),
+      ('nails', 'nails-french.jpg', 'Long French tips with a pink shimmer', 1),
+      ('nails', '13038494', 'Classic French tip manicure', 2),
+      ('nails', '34997574', 'French manicure with gold rings', 3),
+      ('nails', '18730147', 'Black and gold nail art', 4),
+      ('nails', '36207029', 'Nails with gold leaf design', 5),
+      ('tattoo', '40444269', 'Fine line wolf and flowers on the upper arm', 1),
+      ('tattoo', '40444050', 'Small line tattoo on the forearm', 2),
+      ('tattoo', '7610836', 'Shoulder tattoo', 3),
+      ('tattoo', '7901490', 'Small triangle tattoo on the hand', 4),
+      ('piercing', 'piercing-ear.jpg', 'Curated ear piercings with sparkling studs and hoops', 1),
+      ('piercing', '7400019', 'Several ear piercings with an emerald stud', 2),
+      ('piercing', '15799256', 'Ear piercings with elegant jewellery', 3),
+      ('piercing', '11390512', 'Silver hoop earrings', 4),
+      ('piercing', '7479508', 'Small diamond stud', 5),
+      ('pony', '6953597', 'Long wavy ponytail', 1),
+      ('pony', '11204686', 'Long, sleek black ponytail', 2),
+      ('pony', '11526822', 'Long braids', 3),
+      ('pony', '37600597', 'Long braids, worn down', 4);
+    update browtech.config set gallery_seeded = true where id = 1;
+  end if;
+end $$;
+
+create or replace function public.public_gallery(p_category text) returns json
+language sql stable security definer set search_path = browtech, public as $$
+  select coalesce(json_agg(json_build_object('id', id, 'ref', ref, 'alt', alt, 'thumb', thumb) order by sort_order nulls last, id), '[]'::json)
+    from browtech.gallery where category = p_category;
+$$;
+
+create or replace function public.public_photo(p_id int) returns json
+language sql stable security definer set search_path = browtech, public as $$
+  select to_json(data) from browtech.gallery where id = p_id;
+$$;
+
+create or replace function public.add_gallery_photo(p_token uuid, p_category text, p_alt text, p_thumb text, p_data text) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare u browtech.users;
+begin
+  u := browtech.me(p_token); perform browtech.need_admin(u);
+  perform browtech.check_category(p_category);
+  if coalesce(p_data, '') !~ '^data:image/jpeg;base64,[A-Za-z0-9+/=]+$' or coalesce(p_thumb, '') !~ '^data:image/jpeg;base64,[A-Za-z0-9+/=]+$' then raise exception 'That photo could not be read'; end if;
+  if length(p_data) > 500000 or length(p_thumb) > 80000 then raise exception 'That photo is too large'; end if;
+  if (select count(*) from browtech.gallery where category = p_category) >= 12 then raise exception 'This gallery is full (12 photos). Remove one first.'; end if;
+  insert into browtech.gallery(category, alt, thumb, data, sort_order)
+    values (p_category, left(coalesce(nullif(btrim(p_alt), ''), 'Style idea'), 120), p_thumb, p_data, (select coalesce(max(sort_order), 0) + 1 from browtech.gallery where category = p_category));
+  insert into browtech.events(user_id, action, details) values (u.id, 'gallery', initcap(p_category) || ': photo added');
+  return json_build_object('ok', true);
+end $$;
+
+create or replace function public.delete_gallery_photo(p_token uuid, p_id int) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare u browtech.users; c text;
+begin
+  u := browtech.me(p_token); perform browtech.need_admin(u);
+  delete from browtech.gallery where id = p_id returning category into c;
+  if c is null then raise exception 'Photo not found'; end if;
+  insert into browtech.events(user_id, action, details) values (u.id, 'gallery', initcap(c) || ': photo removed');
+  return json_build_object('ok', true);
+end $$;
+
+create or replace function public.reorder_gallery(p_token uuid, p_category text, p_ids int[]) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare u browtech.users;
+begin
+  u := browtech.me(p_token); perform browtech.need_admin(u);
+  update browtech.gallery g set sort_order = o.pos from unnest(p_ids) with ordinality as o(id, pos) where g.id = o.id and g.category = p_category;
+  insert into browtech.events(user_id, action, details) values (u.id, 'gallery', initcap(p_category) || ': photos rearranged');
+  return json_build_object('ok', true);
+end $$;
+
 -- Price list: delete one service, or a main service with everything under it. Old entries and existing bookings keep their services.
 create or replace function public.delete_service(p_token uuid, p_id int) returns json
 language plpgsql security definer set search_path = browtech, public as $$
@@ -891,7 +987,7 @@ begin
   for f in
     select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.proname in ('public_info','public_slots','public_request','list_users','login','logout','get_state','staff_slots',
-       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','delete_service','delete_category','reorder_services','save_settings')
+       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','delete_service','delete_category','public_gallery','public_photo','add_gallery_photo','delete_gallery_photo','reorder_gallery','reorder_services','save_settings')
   loop
     execute format('revoke all on function %s from public', f.sig);
     execute format('grant execute on function %s to anon, authenticated', f.sig);
