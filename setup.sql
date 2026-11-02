@@ -61,6 +61,7 @@ begin
 end $$;
 alter table browtech.services add column if not exists online boolean not null default true;  -- bookable on the customer page
 alter table browtech.services add column if not exists sort_order int;  -- admin's order; empty = after the arranged ones, by name
+alter table browtech.services add column if not exists deleted_at timestamptz;  -- deleted by admin: gone from every list; the row stays because old entries point to it
 
 -- Services done = income. One row per service. Never changed or deleted.
 create table if not exists browtech.sales (
@@ -550,7 +551,7 @@ begin
   return json_build_object(
     'me', json_build_object('id', u.id, 'name', u.name, 'is_admin', u.is_admin),
     'users', (select coalesce(json_agg(json_build_object('id', id, 'name', name, 'is_admin', is_admin, 'active', active) order by id), '[]') from browtech.users),
-    'services', (select coalesce(json_agg(s order by s.category, s.sort_order nulls last, s.name), '[]') from browtech.services s),
+    'services', (select coalesce(json_agg(s order by s.category, s.sort_order nulls last, s.name), '[]') from browtech.services s where s.deleted_at is null),
     'config', (select row_to_json(c) from browtech.config c where c.id = 1),
     'sales', (select coalesce(json_agg(x order by x.id), '[]') from browtech.sales x
                where x.id > coalesce(p_after_sale, 0) and (u.is_admin or (x.user_id = u.id and x.entry_date = browtech.today()))),
@@ -798,14 +799,14 @@ begin
   if length(nm) > 60 then raise exception 'Name is too long'; end if;
   if p_price is null or p_price < 0 or p_price > 1000000 then raise exception 'Enter a price (0 = no fixed price)'; end if;
   if dur < 5 or dur > 600 then raise exception 'Choose how long the service takes'; end if;
-  if exists (select 1 from browtech.services where category = p_category and lower(name) = lower(nm) and id is distinct from p_id) then
+  if exists (select 1 from browtech.services where category = p_category and lower(name) = lower(nm) and id is distinct from p_id and deleted_at is null) then
     raise exception 'That service already exists in this category';
   end if;
   if p_id is null then
     insert into browtech.services(category, name, price, active, duration_min, online) values (p_category, nm, round(p_price, 2), coalesce(p_active, true), dur, coalesce(p_online, true));
     insert into browtech.events(user_id, action, details) values (u.id, 'service added', initcap(p_category) || ': ' || nm || ' – GHS ' || to_char(round(p_price, 2), 'FM999999990.00') || ', ' || dur || ' min');
   else
-    select * into old from browtech.services where id = p_id; if not found then raise exception 'Service not found'; end if;
+    select * into old from browtech.services where id = p_id and deleted_at is null; if not found then raise exception 'Service not found'; end if;
     if old.category <> p_category then d := d || '; category ' || old.category || ' → ' || p_category; end if;
     if old.name <> nm then d := d || '; name ' || old.name || ' → ' || nm; end if;
     if old.price <> round(p_price, 2) then d := d || '; price GHS ' || to_char(old.price, 'FM999999990.00') || ' → ' || to_char(round(p_price, 2), 'FM999999990.00'); end if;
@@ -817,6 +818,32 @@ begin
     insert into browtech.events(user_id, action, details) values (u.id, 'price list', nm || ' –' || substr(d, 2));
   end if;
   return json_build_object('ok', true, 'changed', true);
+end $$;
+
+-- Price list: delete one service, or a main service with everything under it. Old entries and existing bookings keep their services.
+create or replace function public.delete_service(p_token uuid, p_id int) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare u browtech.users; s browtech.services;
+begin
+  u := browtech.me(p_token); perform browtech.need_admin(u);
+  select * into s from browtech.services where id = p_id and deleted_at is null;
+  if not found then raise exception 'Service not found'; end if;
+  update browtech.services set deleted_at = now(), active = false, online = false where id = p_id;
+  insert into browtech.events(user_id, action, details) values (u.id, 'service deleted', initcap(s.category) || ': ' || s.name);
+  return json_build_object('ok', true);
+end $$;
+
+create or replace function public.delete_category(p_token uuid, p_category text) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare u browtech.users; n int;
+begin
+  u := browtech.me(p_token); perform browtech.need_admin(u);
+  perform browtech.check_category(p_category);
+  update browtech.services set deleted_at = now(), active = false, online = false where category = p_category and deleted_at is null;
+  get diagnostics n = row_count;
+  if n = 0 then raise exception 'Nothing to delete'; end if;
+  insert into browtech.events(user_id, action, details) values (u.id, 'service deleted', initcap(p_category) || ': all ' || n || ' services');
+  return json_build_object('ok', true);
 end $$;
 
 -- Price list: the order categories and services are shown in (categories and ids in the wanted order).
@@ -864,7 +891,7 @@ begin
   for f in
     select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.proname in ('public_info','public_slots','public_request','list_users','login','logout','get_state','staff_slots',
-       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','reorder_services','save_settings')
+       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','delete_service','delete_category','reorder_services','save_settings')
   loop
     execute format('revoke all on function %s from public', f.sig);
     execute format('grant execute on function %s to anon, authenticated', f.sig);

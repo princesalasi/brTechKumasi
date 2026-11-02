@@ -1889,7 +1889,8 @@ function priceTable(editable) {
   CAT_KEYS.forEach(c => {
     const svcs = db.services.filter(s => s.category === c && (editable || s.active));
     if (!svcs.length) return;
-    box.append(h("div", { class: "lbl", style: "margin-top:12px" }, h("span", { class: "key", style: "background:var(--c-" + c + ")" }), CATS[c]));
+    box.append(h("div", { class: "lbl", style: "margin-top:12px" + (editable ? ";display:flex;align-items:center;justify-content:space-between" : "") }, h("span", null, h("span", { class: "key", style: "background:var(--c-" + c + ")" }), CATS[c]),
+      editable ? h("button", { class: "btn small danger needs-net", type: "button", disabled: !online, onclick: () => simpleAction("delete_category", { p_category: c }, "Delete " + CATS[c] + " and everything under it (" + svcs.length + (svcs.length > 1 ? " services" : " service") + ")? Customers and staff will no longer see it. Old entries and existing bookings stay. To bring it back, add a service in this category.") }, "Delete") : null));
     box.append(h("div", null, svcs.map(s => h("div", { class: "entry noico" + (editable ? " tap" : "") + (s.active ? "" : " dim"), onclick: editable ? () => serviceSheet(s) : null },
       h("div", { class: "main" }, h("div", { class: "ttl", style: "font-weight:500" }, s.name, s.active ? null : h("span", { class: "tag" }, "hidden"), s.active && !s.online && editable ? h("span", { class: "tag" }, "not online") : null), h("div", { class: "sub small" }, durText(s.duration_min || 60))),
       h("div", { class: "amt", style: "font-weight:500" + (s.price > 0 ? "" : ";color:var(--text3)") }, s.price > 0 ? money(s.price) : "no price")))));
@@ -1975,11 +1976,12 @@ function serviceSheet(s) {
   const onSeg = seg({ yes: "Yes", no: "No" }, onl ? "yes" : "no", v => onl = v === "yes");
   const durs = [10,15,20,30,45,60,75,90,105,120]; // an older service outside these starts on the nearest longer choice (or 2 h)
   const dur = opts(h("select", { id: "pDur" }), durs.map(v => [v, durText(v)]), durs.find(v => v >= (s ? s.duration_min || 60 : 60)) || 120);
-  sheet(s ? "Change service" : "Add service", [
+  const sh = sheet(s ? "Change service" : "Add service", [
     field("Category", cat), field("Name", nm), field("Price (GH₵)", price, "Leave empty if the price differs every time."),
     field("Takes about", dur, "Used to find free times on the booking page."),
     h("div", { class: "blk" }, h("span", { class: "lbl" }, "Customers can book it online"), onSeg),
-    s ? h("div", { class: "blk" }, h("span", { class: "lbl" }, "In the service list"), vis, h("div", { class: "hint" }, "Hidden services stay in old entries but can't be picked for new ones.")) : null
+    s ? h("div", { class: "blk" }, h("span", { class: "lbl" }, "In the service list"), vis, h("div", { class: "hint" }, "Hidden services stay in old entries but can't be picked for new ones.")) : null,
+    s ? h("div", { class: "choices" }, h("button", { class: "choice needs-net red", type: "button", disabled: !online, onclick: () => { sh.close(); setTimeout(() => simpleAction("delete_service", { p_id: s.id }, "Delete " + s.name + "? Customers and staff will no longer see it. Old entries and existing bookings stay."), 180); } }, "Delete service")) : null
   ], s ? "Save" : "Add", async () => {
     let p = 0; if (price.value.trim()) p = readMoney(price);
     const r = await call("save_service", { p_id: s ? s.id : null, p_category: cat.value, p_name: nm.value, p_price: p, p_active: shown, p_duration: +dur.value, p_online: onl });
