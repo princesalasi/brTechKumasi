@@ -646,7 +646,15 @@ const TZ = "Africa/Accra"; // all days and times are Kumasi time, wherever the p
 const CATS = { pony: "Pony", piercing: "Piercing", brows: "Brows", tattoo: "Tattoo", lashes: "Lashes", nails: "Nails" };
 let CAT_KEYS = Object.keys(CATS);
 // The admin's order of the main services; any category it doesn't name goes last.
-function setCatOrder(order) { const all = Object.keys(CATS); CAT_KEYS = (order || []).filter(c => all.includes(c)).concat(all.filter(c => !(order || []).includes(c))); }
+const CUSTOM_COLORS = ["#2a9d8f", "#e76f51", "#6a4c93", "#1982c4", "#5b8e1f", "#c9184a", "#7f5539", "#118ab2"];
+// Every page reads CATS and CAT_KEYS, so the admin's own main services show up wherever the built-in ones do.
+function setCatOrder(order, custom) {
+  (custom || []).forEach((c, i) => {
+    CATS[c.key] = c.name;
+    document.documentElement.style.setProperty("--c-" + c.key, CUSTOM_COLORS[i % CUSTOM_COLORS.length]);
+  });
+  const all = Object.keys(CATS); CAT_KEYS = (order || []).filter(c => all.includes(c)).concat(all.filter(c => !(order || []).includes(c)));
+}
 const PAY = { cash: "Cash", momo: "MoMo", card: "Card / bank", free: "Free" };
 const STATUS = { requested: "Request", booked: "Booked", done: "Done", declined: "Declined", cancelled: "Cancelled", "no-show": "No-show", undone: "Undone" };
 const isAdmin = () => !!(session && session.user && session.user.is_admin);
@@ -657,7 +665,7 @@ function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch 
 let session = load(LS_SESSION, null);
 let prefs = Object.assign({}, load(LS_PREFS, {}));
 let db = load(LS_CACHE, null) || emptyDb();
-if (db.config) setCatOrder(db.config.category_order);
+if (db.config) setCatOrder(db.config.category_order, db.config.custom_categories);
 function emptyDb() { return { me: null, users: [], services: [], config: null, sales: [], apptDone: [], appts: [], changes: [], undos: [], events: [], reset: null, synced: null }; }
 
 function h(tag, props, ...kids) {
@@ -796,7 +804,7 @@ async function sync(full) {
         s = await rpc("get_state", args());
         setTimeout(() => toast("Test entries were cleared – fresh start"), 300);
       }
-      db.me = s.me; db.users = s.users; db.services = s.services; db.reset = s.reset_count; db.config = s.config; db.apptDone = s.appt_done || []; setCatOrder(s.config && s.config.category_order);
+      db.me = s.me; db.users = s.users; db.services = s.services; db.reset = s.reset_count; db.config = s.config; db.apptDone = s.appt_done || []; setCatOrder(s.config && s.config.category_order, s.config && s.config.custom_categories);
       db.sales = db.sales.concat(s.sales); db.appts = db.appts.concat(s.appointments);
       db.changes = db.changes.concat(s.changes); db.undos = db.undos.concat(s.undos);
       db.events = db.events.concat(s.events);
@@ -874,7 +882,7 @@ const CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const MOVE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M14 6l6 6-6 6"/></svg>';
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>';
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-const catIco = (cat, html) => h("div", { class: "ico c-" + (CATS[cat] ? cat : "other"), "aria-hidden": "true", html: html || null }, html ? null : (CATS[cat] || "?").slice(0, 2));
+const catIco = (cat, html) => h("div", { class: "ico c-" + (CATS[cat] ? cat : "other"), style: "background:var(--c-" + (CATS[cat] ? cat : "other") + ")", "aria-hidden": "true", html: html || null }, html ? null : (CATS[cat] || "?").slice(0, 2));
 function undoneLine(u, D) { return u ? h("div", { class: "sub why" }, "Undone: " + u.reason + " – " + (D.userName[u.user_id] || "?") + ", " + stamp(u.logged_at)) : null; }
 
 function saleEl(s, D, opts) {
@@ -2036,7 +2044,11 @@ function gallerySheet() {
   load();
 }
 function serviceSheet(s) {
-  const cat = h("select", { id: "pCat" }, CAT_KEYS.map(c => h("option", { value: c }, CATS[c])));
+  const cat = h("select", { id: "pCat" }, CAT_KEYS.map(c => h("option", { value: c }, CATS[c])), h("option", { value: "__new" }, "New category…"));
+  const newCat = h("input", { id: "pNewCat", autocomplete: "off", maxlength: 30 });
+  const newCatField = field("New category name", newCat, "It appears on the booking page, walk-ins, History, Trends and the gallery.");
+  newCatField.hidden = true;
+  cat.onchange = () => { newCatField.hidden = cat.value !== "__new"; if (!newCatField.hidden) newCat.focus(); };
   cat.value = s ? s.category : CAT_KEYS[0];
   const nm = h("input", { id: "pName", autocomplete: "off", value: s ? s.name : "" });
   const price = h("input", { id: "pPrice", inputmode: "decimal", autocomplete: "off", value: s && s.price > 0 ? String(s.price) : "", placeholder: "0 = no fixed price" });
@@ -2046,14 +2058,20 @@ function serviceSheet(s) {
   const durs = [10,15,20,30,45,60,75,90,105,120]; // an older service outside these starts on the nearest longer choice (or 2 h)
   const dur = opts(h("select", { id: "pDur" }), durs.map(v => [v, durText(v)]), durs.find(v => v >= (s ? s.duration_min || 60 : 60)) || 120);
   const sh = sheet(s ? "Change service" : "Add service", [
-    field("Category", cat), field("Name", nm), field("Price (GH₵)", price, "Leave empty if the price differs every time."),
+    field("Category", cat), newCatField, field("Name", nm), field("Price (GH₵)", price, "Leave empty if the price differs every time."),
     field("Takes about", dur, "Used to find free times on the booking page."),
     h("div", { class: "blk" }, h("span", { class: "lbl" }, "Customers can book it online"), onSeg),
     s ? h("div", { class: "blk" }, h("span", { class: "lbl" }, "In the service list"), vis, h("div", { class: "hint" }, "Hidden services stay in old entries but can't be picked for new ones.")) : null,
     s ? h("div", { class: "choices" }, h("button", { class: "choice needs-net red", type: "button", disabled: !online, onclick: () => { sh.close(); setTimeout(() => simpleAction("delete_service", { p_id: s.id }, "Delete " + s.name + "? Customers and staff will no longer see it. Old entries and existing bookings stay."), 180); } }, "Delete service")) : null
   ], s ? "Save" : "Add", async () => {
     let p = 0; if (price.value.trim()) p = readMoney(price);
-    const r = await call("save_service", { p_id: s ? s.id : null, p_category: cat.value, p_name: nm.value, p_price: p, p_active: shown, p_duration: +dur.value, p_online: onl });
+    let category = cat.value;
+    if (category === "__new") {
+      if (!nm.value.trim()) throw new Error("Enter the service name");
+      category = (await call("add_category", { p_name: newCat.value })).key;
+      await sync();
+    }
+    const r = await call("save_service", { p_id: s ? s.id : null, p_category: category, p_name: nm.value, p_price: p, p_active: shown, p_duration: +dur.value, p_online: onl });
     await sync(); toast(r.changed === false ? "Nothing changed" : "Price list saved");
   });
 }
@@ -2337,7 +2355,7 @@ async function showBook() {
   if (bk.sent) return;
   try {
     bk.info = await rpc("public_info", {});
-    setCatOrder(bk.info.category_order);
+    setCatOrder(bk.info.category_order, bk.info.custom_categories);
     $("bkLoading").hidden = true;
     if (!bk.info.online_booking || !bk.info.services.length) {
       const ph = bk.info.contact_phone;

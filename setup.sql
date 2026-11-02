@@ -38,7 +38,7 @@ create table if not exists browtech.sessions (
 -- Price list (admin keeps it up to date). price 0 = no price set yet.
 create table if not exists browtech.services (
   id       serial primary key,
-  category text not null check (category in ('brows','lashes','nails','tattoo','piercing','pony')),
+  category text not null,
   name     text not null check (length(btrim(name)) between 1 and 60),
   price    numeric(10,2) not null default 0 check (price >= 0),
   active   boolean not null default true,
@@ -62,6 +62,8 @@ end $$;
 alter table browtech.services add column if not exists online boolean not null default true;  -- bookable on the customer page
 alter table browtech.services add column if not exists sort_order int;  -- admin's order; empty = after the arranged ones, by name
 alter table browtech.services add column if not exists deleted_at timestamptz;  -- deleted by admin: gone from every list; the row stays because old entries point to it
+alter table browtech.services drop constraint if exists services_category_name_key;  -- a deleted service's name can be used again
+create unique index if not exists services_live_name on browtech.services(category, name) where deleted_at is null;
 
 -- Services done = income. One row per service. Never changed or deleted.
 create table if not exists browtech.sales (
@@ -71,7 +73,7 @@ create table if not exists browtech.sales (
   staff_id       int not null references browtech.users(id), -- who did the service
   entry_date     date not null,                              -- the day it was done
   service_id     int references browtech.services(id),
-  category       text not null check (category in ('brows','lashes','nails','tattoo','piercing','pony')),
+  category       text not null,
   service_name   text not null,
   list_price     numeric(10,2),                              -- price-list price at that moment
   amount         numeric(10,2) not null check (amount >= 0 and amount <= 1000000),
@@ -90,7 +92,7 @@ create table if not exists browtech.appointments (
   appt_date    date not null,
   appt_time    time not null,
   service_id   int references browtech.services(id),
-  category     text not null check (category in ('brows','lashes','nails','tattoo','piercing','pony')),
+  category     text not null,
   service_name text not null,                               -- several services: "Lash refill + Brow shaping"
   staff_id     int references browtech.users(id),            -- null = anyone
   customer     text not null,
@@ -162,6 +164,10 @@ create table if not exists browtech.config (
 );
 insert into browtech.config(id) values (1) on conflict do nothing;
 alter table browtech.config add column if not exists category_order text[];  -- admin's order of the main services
+alter table browtech.config add column if not exists custom_categories jsonb not null default '[]';  -- the admin's own main services: [{"key":"makeup","name":"Makeup"}]
+alter table browtech.services drop constraint if exists services_category_check;
+alter table browtech.sales drop constraint if exists sales_category_check;
+alter table browtech.appointments drop constraint if exists appointments_category_check;
 
 -- Starter price list – only on the very first run (prices 0 = not set yet)
 do $$
@@ -221,7 +227,10 @@ end $$;
 create or replace function browtech.check_category(c text) returns void
 language plpgsql as $$
 begin
-  if c is null or c not in ('brows','lashes','nails','tattoo','piercing','pony') then raise exception 'Choose a category'; end if;
+  if c is null or not (c in ('brows','lashes','nails','tattoo','piercing','pony')
+    or exists (select 1 from browtech.config cf, jsonb_array_elements(cf.custom_categories) x where cf.id = 1 and x->>'key' = c)) then
+    raise exception 'Choose a category';
+  end if;
 end $$;
 
 -- "today" and "now" are Ghana time (Africa/Accra), whatever the server's clock zone
@@ -442,7 +451,7 @@ create or replace function public.public_info() returns json
 language sql stable security definer set search_path = browtech, public as $$
   select json_build_object(
     'online_booking', c.online_booking, 'contact_phone', c.contact_phone, 'days_ahead', c.days_ahead,
-    'hours', c.hours, 'today', browtech.today(), 'category_order', c.category_order,
+    'hours', c.hours, 'today', browtech.today(), 'category_order', c.category_order, 'custom_categories', c.custom_categories,
     'services', (select coalesce(json_agg(json_build_object('id', s.id, 'category', s.category, 'name', s.name, 'price', s.price, 'duration_min', s.duration_min) order by s.category, s.sort_order nulls last, s.name), '[]')
                    from browtech.services s where s.active and s.online))
     from browtech.config c where c.id = 1;
@@ -824,7 +833,7 @@ end $$;
 alter table browtech.config add column if not exists gallery_seeded boolean not null default false;
 create table if not exists browtech.gallery (
   id serial primary key,
-  category text not null check (category in ('brows','lashes','nails','tattoo','piercing','pony')),
+  category text not null,
   ref text,
   alt text not null default 'Style idea',
   thumb text,
@@ -832,6 +841,7 @@ create table if not exists browtech.gallery (
   sort_order int,
   added_at timestamptz not null default now()
 );
+alter table browtech.gallery drop constraint if exists gallery_category_check;
 do $$
 begin
   if not (select gallery_seeded from browtech.config where id = 1) then
@@ -916,6 +926,31 @@ begin
   return json_build_object('ok', true);
 end $$;
 
+-- Price list: the admin's own main services, shown everywhere next to the built-in ones.
+create or replace function public.add_category(p_token uuid, p_name text) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare u browtech.users; nm text := btrim(coalesce(p_name, '')); base text; k text; i int := 1; cur jsonb;
+begin
+  u := browtech.me(p_token); perform browtech.need_admin(u);
+  if length(nm) < 2 then raise exception 'Enter the category name'; end if;
+  if length(nm) > 30 then raise exception 'Category name is too long'; end if;
+  select custom_categories into cur from browtech.config where id = 1 for update;
+  if jsonb_array_length(cur) >= 20 then raise exception 'You can add up to 20 categories'; end if;
+  if lower(nm) in ('brows','lashes','nails','tattoo','piercing','pony')
+     or exists (select 1 from jsonb_array_elements(cur) x where lower(x->>'name') = lower(nm)) then
+    raise exception 'That category already exists';
+  end if;
+  base := left(regexp_replace(lower(nm), '[^a-z0-9]', '', 'g'), 20);
+  if base = '' then base := 'category'; end if;
+  k := base;
+  while k in ('brows','lashes','nails','tattoo','piercing','pony','other') or exists (select 1 from jsonb_array_elements(cur) x where x->>'key' = k) loop
+    i := i + 1; k := base || i;
+  end loop;
+  update browtech.config set custom_categories = cur || jsonb_build_object('key', k, 'name', nm) where id = 1;
+  insert into browtech.events(user_id, action, details) values (u.id, 'category added', nm);
+  return json_build_object('ok', true, 'key', k);
+end $$;
+
 -- Price list: delete one service, or a main service with everything under it. Old entries and existing bookings keep their services.
 create or replace function public.delete_service(p_token uuid, p_id int) returns json
 language plpgsql security definer set search_path = browtech, public as $$
@@ -938,6 +973,7 @@ begin
   update browtech.services set deleted_at = now(), active = false, online = false where category = p_category and deleted_at is null;
   get diagnostics n = row_count;
   if n = 0 then raise exception 'Nothing to delete'; end if;
+  update browtech.config set custom_categories = (select coalesce(jsonb_agg(x), '[]'::jsonb) from jsonb_array_elements(custom_categories) x where x->>'key' <> p_category) where id = 1;
   insert into browtech.events(user_id, action, details) values (u.id, 'service deleted', initcap(p_category) || ': all ' || n || ' services');
   return json_build_object('ok', true);
 end $$;
@@ -987,7 +1023,7 @@ begin
   for f in
     select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.proname in ('public_info','public_slots','public_request','list_users','login','logout','get_state','staff_slots',
-       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','delete_service','delete_category','public_gallery','public_photo','add_gallery_photo','delete_gallery_photo','reorder_gallery','reorder_services','save_settings')
+       'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','delete_service','delete_category','add_category','public_gallery','public_photo','add_gallery_photo','delete_gallery_photo','reorder_gallery','reorder_services','save_settings')
   loop
     execute format('revoke all on function %s from public', f.sig);
     execute format('grant execute on function %s to anon, authenticated', f.sig);
