@@ -106,10 +106,10 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 .gallery button { flex: none; width: 112px; height: 140px; padding: 0; border: 0; border-radius: 14px; overflow: hidden; background: var(--fill); scroll-snap-align: start; cursor: pointer; }
 .gallery img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gallery-note { margin: 4px 4px 12px; font-size: 12px; color: var(--text3); letter-spacing: 0; }
-#evLog summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; min-height: 44px; }
-#evLog summary::-webkit-details-marker { display: none; }
-#evLog .ev-chev { flex: none; transition: transform .2s; }
-#evLog[open] .ev-chev { transform: rotate(180deg); }
+.fold summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; min-height: 44px; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold .ev-chev { flex: none; transition: transform .2s; }
+.fold[open] .ev-chev { transform: rotate(180deg); }
 .gal-handle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 68px; }
 .gal-handle img { flex: none; width: 48px; height: 60px; object-fit: cover; border-radius: 8px; background: var(--fill); pointer-events: none; }
 .gallery-big { width: 100%; max-height: 62vh; object-fit: contain; display: block; border-radius: 14px; background: var(--fill); margin-bottom: 10px; }
@@ -602,13 +602,15 @@ details.f[open] > summary { margin-bottom: 12px; }
       <div class="row"><button class="btn secondary small" id="shareLink" type="button">Share link</button><a class="btn secondary small" href="#" id="openBook">Open page</a></div>
     </div>
     <div id="adminArea" hidden>
+      <div class="section-h"><span>Gallery photos</span></div>
+      <div class="card"><p class="small muted" style="margin:0 0 10px">Upload, remove or rearrange the photos customers see on the booking page.</p><button class="btn secondary needs-net" id="galleryBtn" type="button" style="width:100%">Upload or change photos</button></div>
       <div class="section-h"><span>Online booking</span></div>
       <div class="card"><div id="cfgSummary"></div><button class="btn secondary small needs-net" id="cfgBtn" type="button" style="margin-top:10px">Change booking settings</button></div>
       <div class="section-h"><span>People</span></div>
       <div class="card"><div id="userList"></div><button class="btn secondary small needs-net" id="addUserBtn" type="button" style="margin-top:10px">Add person</button></div>
-      <div class="section-h"><span>Price list</span></div>
-      <div class="card"><p class="small muted" style="margin:0 0 4px">Prices fill in automatically when a service is entered and can still be changed for one customer. The time a service takes decides which times customers can book. Tap a service to change it.</p><div id="priceList"></div><button class="btn secondary small needs-net" id="addSvcBtn" type="button" style="margin-top:10px">Add service</button> <button class="btn secondary small needs-net" id="orderSvcBtn" type="button" style="margin-top:10px">Rearrange</button><button class="btn secondary small needs-net" id="galleryBtn" type="button" style="margin-top:10px;margin-left:4px">Gallery</button></div>
-      <details id="evLog"><summary class="section-h"><span>Activity log</span><svg class="ev-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+      <details class="fold" id="priceFold"><summary class="section-h"><span>Price list</span><svg class="ev-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+      <div class="card"><p class="small muted" style="margin:0 0 4px">Prices fill in automatically when a service is entered and can still be changed for one customer. The time a service takes decides which times customers can book. Tap a service to change it.</p><div id="priceList"></div><button class="btn secondary small needs-net" id="addSvcBtn" type="button" style="margin-top:10px">Add service</button> <button class="btn secondary small needs-net" id="orderSvcBtn" type="button" style="margin-top:10px">Rearrange</button></div></details>
+      <details class="fold" id="evLog"><summary class="section-h"><span>Activity log</span><svg class="ev-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
       <div class="card"><p class="small muted" style="margin:0 0 4px">People added, PINs changed, prices changed, lockouts. Cannot be edited.</p><div id="eventList"></div><button class="link" id="evMore" type="button" hidden>Show more</button></div></details>
     </div>
     <div id="priceArea">
@@ -2625,8 +2627,11 @@ $("seeAll").onclick = () => showTab("history");
 $("fClear").onclick = () => { ["fText", "fType", "fCat", "fStaff", "fUser", "fPay", "fFrom", "fTo"].forEach(id => $(id).value = ""); render(); };
 $("histMore").onclick = () => { histLimit += 200; render(); };
 $("evMore").onclick = () => { evLimit += 300; render(); };
-try { $("evLog").open = localStorage.getItem("browtech.evLogOpen") === "1"; } catch (e) {} // closed unless opened on this device
-$("evLog").addEventListener("toggle", () => { try { localStorage.setItem("browtech.evLogOpen", $("evLog").open ? "1" : "0"); } catch (e) {} });
+document.querySelectorAll(".fold").forEach(d => { // closed unless opened on this device
+  const key = "browtech." + d.id + "Open";
+  try { d.open = localStorage.getItem(key) === "1"; } catch (e) {}
+  d.addEventListener("toggle", () => { try { localStorage.setItem(key, d.open ? "1" : "0"); } catch (e) {} });
+});
 $("exportBtn").onclick = exportCSV;
 $("tPeriod").onchange = () => {
   if ($("tPeriod").value === "custom" && !$("tFrom").value) { $("tFrom").value = addDays(today(), -27); $("tTo").value = today(); }
