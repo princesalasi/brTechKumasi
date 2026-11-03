@@ -2324,10 +2324,11 @@ const GALLERY = {
 // A file name is one of the owner's images in gallery/; a number is a Pexels photo.
 const isPexels = ref => /^\d+$/.test(ref || "");
 const galleryImg = (ref, w) => isPexels(ref) ? "https://images.pexels.com/photos/" + ref + "/pexels-photo-" + ref + ".jpeg?auto=compress&cs=tinysrgb&w=" + w : "gallery/" + ref;
-const galleryCache = {};
-async function loadGallery(cat) {
-  if (galleryCache[cat]) return galleryCache[cat];
-  try { return galleryCache[cat] = await rpc("public_gallery", { p_category: cat }); }
+// Kept for a minute only, so photos another admin changes show up without closing the app.
+const galleryCache = {}, galleryAt = {};
+async function loadGallery(cat, fresh) {
+  if (!fresh && galleryCache[cat] && Date.now() - galleryAt[cat] < 60000) return galleryCache[cat];
+  try { const photos = await rpc("public_gallery", { p_category: cat }); galleryAt[cat] = Date.now(); return galleryCache[cat] = photos; }
   catch (e) { return (GALLERY[cat] || []).map(([ref, alt]) => ({ ref: String(ref), alt })); } // the built-in list if the database can't answer
 }
 function galleryPhotoSheet(cat, p) {
@@ -2336,12 +2337,14 @@ function galleryPhotoSheet(cat, p) {
   if (p.thumb) rpc("public_photo", { p_id: p.id }).then(d => { if (d) big.src = d; }).catch(() => {});
 }
 let galleryCat = null;
-function renderGallery() {
-  if (galleryCat === bk.cat) return; // the strip keeps its scroll position while services are ticked
-  const cat = galleryCat = bk.cat;
-  if (!galleryCache[cat]) $("bkGallery").replaceChildren();
-  loadGallery(cat).then(photos => {
+function renderGallery(fresh) {
+  if (galleryCat === bk.cat && !fresh) return; // the strip keeps its scroll position while services are ticked
+  const cat = bk.cat, same = galleryCat === cat, shown = same ? galleryCache[cat] : null;
+  galleryCat = cat;
+  if (!same && !galleryCache[cat]) $("bkGallery").replaceChildren();
+  loadGallery(cat, fresh).then(photos => {
     if (galleryCat !== cat) return;
+    if (shown && JSON.stringify(shown) === JSON.stringify(photos)) return; // unchanged: keep the scroll position
     $("bkGallery").replaceChildren(...(photos.length ? [
       h("div", { class: "gallery", role: "group", "aria-label": CATS[cat] + " style ideas" }, photos.map(p => h("button", { type: "button", "aria-label": "Show larger: " + p.alt, onclick: () => galleryPhotoSheet(cat, p) },
         h("img", { src: p.thumb || galleryImg(p.ref, 300), alt: "", loading: "lazy", width: 112, height: 140 })))),
@@ -2669,7 +2672,11 @@ $("shareLink").onclick = shareBookLink;
 $("reloadAll").onclick = async () => { await sync(true); toast("All data reloaded"); };
 $("pinGo").onclick = doLogin;
 $("pinBack").onclick = () => showLogin();
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && session && staffMode()) sync(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  if (session && staffMode()) sync();
+  if (!$("book").hidden && bk.cat) renderGallery(true); // photos may have changed while the app was in the background
+});
 window.addEventListener("online", () => session && staffMode() && sync());
 let rT; window.addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(() => { if (currentTab === "trends") render(); }, 150); });
 
