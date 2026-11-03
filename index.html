@@ -1002,14 +1002,14 @@ function requestRow(st, D) {
         h("button", { class: "btn small needs-net", type: "button", disabled: !online, onclick: () => confirmSheet(st) }, "Confirm"),
         h("button", { class: "btn small danger needs-net", type: "button", disabled: !online, onclick: () => declineSheet(st) }, "Decline"))));
 }
-// days staff can book: today if open, then the next 3 days the shop is open (same rule as browtech.staff_days)
+// days staff can book: today if open, then every open day in the next 2 weeks (same rule as browtech.staff_days)
 function staffDays() {
   const hours = (db.config || {}).hours || {}, t = today(), open = d => hours[String(fromISO(d).getDay())];
   const out = open(t) ? [t] : [];
-  for (let i = 1, n = 0; i <= 14 && n < 3; i++) { const d = addDays(t, i); if (open(d)) { out.push(d); n++; } }
+  for (let i = 1; i <= 14; i++) { const d = addDays(t, i); if (open(d)) out.push(d); }
   return out;
 }
-const STAFF_DAYS_ERR = "Appointments can only be for today and the next 3 working days";
+const STAFF_DAYS_ERR = "Appointments can only be for today and the next 2 weeks";
 function renderDays(D) {
   const strip = $("dayStrip"), t = today();
   const count = {};
@@ -1855,7 +1855,7 @@ function cfgSummary() {
     DAYS.map(([d, n]) => { const x = c.hours[String(d)]; return h("tr", null, h("td", null, n), h("td", { class: "n" + (x ? "" : " muted") }, x ? x[0] + " – " + x[1] : "Closed")); }),
     h("tr", null, h("td", null, "Customers at the same time"), h("td", { class: "n" }, c.capacity)),
     h("tr", null, h("td", null, "Times offered every"), h("td", { class: "n" }, c.slot_minutes + " min")),
-    h("tr", null, h("td", null, "Book up to"), h("td", { class: "n" }, "next 3 working days")),
+    h("tr", null, h("td", null, "Book up to"), h("td", { class: "n" }, "next 2 weeks")),
     h("tr", null, h("td", null, "Minimum notice"), h("td", { class: "n" }, c.min_notice_hours ? c.min_notice_hours + " h" : "none")),
     h("tr", null, h("td", null, "WhatsApp number"), h("td", { class: "n" + (c.contact_phone ? "" : " neg") }, c.contact_phone || "not set – needed for tattoo inspo")));
 }
@@ -2377,9 +2377,9 @@ async function showBook() {
   }
 }
 function openDays() {
-  // the next 3 days the shop is open, starting tomorrow (same rule as browtech.bookable_days)
+  // every day the shop is open in the next 2 weeks, starting tomorrow (same rule as browtech.bookable_days)
   const out = [], t = bk.info.today;
-  for (let i = 1; i <= 14 && out.length < 3; i++) {
+  for (let i = 1; i <= 14; i++) {
     const d = addDays(t, i), hrs = bk.info.hours[String(fromISO(d).getDay())];
     if (hrs) out.push(d);
   }
