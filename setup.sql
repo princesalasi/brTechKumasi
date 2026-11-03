@@ -509,12 +509,8 @@ end $$;
 -- Staff functions (need a login)
 -- =====================================================================
 
--- Names for the login screen
-create or replace function public.list_users() returns json
-language sql stable security definer set search_path = browtech, public as $$
-  select coalesce(json_agg(json_build_object('id', id, 'name', name) order by name), '[]'::json)
-    from browtech.users where active;
-$$;
+-- The login screen no longer lists names (customers could see them), so this older function is removed.
+drop function if exists public.list_users();
 
 -- Log in with PIN. 5 wrong PINs → that person is locked for 15 minutes.
 -- (Returns an error message instead of raising, so the failed-try counter is kept.)
@@ -541,6 +537,23 @@ begin
   delete from browtech.sessions where expires_at < now();
   insert into browtech.sessions(user_id) values (u.id) returning token into t;
   return json_build_object('ok', true, 'token', t, 'user', json_build_object('id', u.id, 'name', u.name, 'is_admin', u.is_admin));
+end $$;
+
+-- Log in with name and PIN. Wrong name and wrong PIN give the same answer, so nobody can find out who works here.
+create or replace function public.login_name(p_name text, p_pin text) returns json
+language plpgsql security definer set search_path = browtech, public as $$
+declare uid int; r json;
+begin
+  select id into uid from browtech.users where lower(name) = lower(btrim(coalesce(p_name, ''))) and active;
+  if uid is null then
+    perform pg_sleep(0.3);
+    return json_build_object('ok', false, 'error', 'Wrong name or PIN');
+  end if;
+  r := public.login(uid, p_pin);
+  if not (r->>'ok')::boolean and (r->>'error') like 'Wrong PIN (%' then
+    return json_build_object('ok', false, 'error', 'Wrong name or PIN');
+  end if;
+  return r;
 end $$;
 
 create or replace function public.logout(p_token uuid) returns json
@@ -1022,7 +1035,7 @@ declare f record;
 begin
   for f in
     select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname = 'public' and p.proname in ('public_info','public_slots','public_request','list_users','login','logout','get_state','staff_slots',
+     where n.nspname = 'public' and p.proname in ('public_info','public_slots','public_request','login','login_name','logout','get_state','staff_slots',
        'add_sale','add_sales','book_appointment','change_appointment','undo_entry','change_pin','add_user','reset_pin','set_user_active','set_admin','save_service','delete_service','delete_category','add_category','public_gallery','public_photo','add_gallery_photo','delete_gallery_photo','reorder_gallery','reorder_services','save_settings')
   loop
     execute format('revoke all on function %s from public', f.sig);

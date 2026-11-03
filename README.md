@@ -6,7 +6,7 @@ Booking page and staff app for BrowTech Kumasi (pony, piercing, brows, tattoo, l
 
 | Who | Address | What they can do |
 |---|---|---|
-| **Customers** | https://princesalasi.github.io/brTechKumasi/ | Choose **one or several services** (with prices and durations, from any category), a day and a **free** time for all of them together, enter name and phone → sends a **request**. Tattoo customers then get a button to send their **inspiration photos to your WhatsApp**. No login. |
+| **Customers** | https://www.btkumasi.com/ | Choose **one or several services** (with prices and durations, from any category), a day and a **free** time for all of them together, enter name and phone → sends a **request**. Tattoo customers then get a button to send their **inspiration photos to your WhatsApp**. No login. |
 | **Workers** | …/brTechKumasi/#staff (PIN) | New requests (confirm / decline, ready WhatsApp message), appointments, book by phone, **Service done**. They see only their own entries of today – no income. |
 | **Admin** | …/brTechKumasi/#staff (PIN) | Everything above plus **History** (filters, CSV), **Trends** (charts, PDF) and **More**: people, price list (price, duration, bookable online), booking settings (opening hours, customers at the same time, how far ahead, minimum notice, contact phone), activity log. |
 
@@ -57,7 +57,7 @@ Log in as the admin (…/brTechKumasi/#staff) →
 - **More → People → Add person**: name and 6-digit PIN for everyone. Everyone can change their own PIN under **More**.
 
 ### 6. Share the booking link, install the staff app
-- Customers: share https://princesalasi.github.io/brTechKumasi/ (More → **Share link**) on WhatsApp status, Instagram bio, Google Business profile.
+- Customers: share https://www.btkumasi.com/ (More → **Share link**) on WhatsApp status, Instagram bio, Google Business profile.
 - Staff phones: open **…/brTechKumasi/#staff** → iPhone: **Safari → Share → Add to Home Screen**; Android: **Chrome → ⋮ → Install app**. The icon then opens straight to the staff login.
 
 ### 7. Fresh start after testing (optional)

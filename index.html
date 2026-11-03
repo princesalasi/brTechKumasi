@@ -443,15 +443,16 @@ details.f[open] > summary { margin-bottom: 12px; }
   <div class="mode viewSwitch" role="radiogroup" aria-label="Client or staff" data-mode="staff"><span class="thumb"></span><button type="button" role="radio" data-mode="client" aria-checked="false" tabindex="-1">Client</button><button type="button" role="radio" data-mode="staff" aria-checked="true">Staff</button></div>
   <img class="logo" src="btk-icon-192.png" alt="">
   <h1 class="login-title">BrowTech Kumasi</h1>
-  <p class="login-sub" id="loginSub">Who's using the app?</p>
-  <div id="loginUsers">
-    <div class="choices userlist" id="userBtns"></div>
+  <p class="login-sub" id="loginSub">Staff login</p>
+  <div id="loginUsers" style="max-width:300px;margin:0 auto">
+    <div class="field" style="margin-bottom:0"><label for="loginName">Name</label><input id="loginName" autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="40"></div>
     <p class="err" id="usersErr" hidden></p>
+    <button class="btn" id="nameGo" type="button" style="width:100%;margin-top:14px">Next</button>
   </div>
   <div id="loginPin" hidden>
     <div class="pindots" id="pinDots" aria-hidden="true"></div>
     <p class="err" id="pinErr" hidden style="text-align:center"></p>
-    <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" aria-label="PIN" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" aria-label="PIN" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
     <div class="keypad" id="keypad"></div>
     <div class="row" style="max-width:300px;margin:22px auto 0">
       <button class="btn secondary" id="pinBack" type="button">Back</button>
@@ -2302,7 +2303,9 @@ const bkPrice = () => bk.svcs.reduce((t, x) => t + cents(x.price), 0);
 const bkKey = () => bk.svcs.map(x => x.id).sort((a, b) => a - b).join(",") + "|" + bk.day;
 const hasTattoo = list => list.some(x => x.category === "tattoo");
 const bkNames = list => list.map(x => x.name).join(" + ");
-const bookLink = () => location.origin + location.pathname;
+// The address customers get, wherever the app itself is opened.
+const SITE = "https://www.btkumasi.com/";
+const bookLink = () => SITE;
 function waNumber(phone) {
   let d = (phone || "").replace(/\D/g, "");
   if (d.startsWith("00")) d = d.slice(2);
@@ -2519,22 +2522,24 @@ window.addEventListener("hashchange", route);
 
 /* ================= login ================= */
 let loginUser = null, pinVal = "";
-async function showLogin(msg) {
+// Staff type their name, then the PIN. The names are never listed, so customers who tap Staff don't see them.
+function showLogin(msg, keepName) {
   $("app").hidden = true; $("book").hidden = true; $("bookbar").hidden = true; $("login").hidden = false; $("loginPin").hidden = true; $("loginUsers").hidden = false;
-  $("loginSub").textContent = "Who's using the app?";
-  const box = $("userBtns"); box.innerHTML = "";
+  $("loginSub").textContent = "Staff login";
+  if (!keepName) $("loginName").value = "";
   $("usersErr").hidden = !msg; $("usersErr").textContent = msg || "";
-  try {
-    const users = await rpc("list_users", {});
-    if (!users.length) { $("usersErr").textContent = "No people set up yet – run setup.sql in Supabase first."; $("usersErr").hidden = false; }
-    users.forEach(u => box.append(h("button", { class: "choice", type: "button", onclick: () => pickUser(u) }, u.name)));
-  } catch (e) { $("usersErr").textContent = e.message; $("usersErr").hidden = false; box.append(h("button", { class: "choice", type: "button", onclick: () => showLogin() }, "Try again")); }
 }
-function pickUser(u) {
-  loginUser = u; pinVal = ""; drawPin(); $("pinErr").hidden = true;
-  $("loginSub").textContent = "Enter PIN for " + u.name;
+function pickUser() {
+  const name = $("loginName").value.trim();
+  if (!name) { $("usersErr").textContent = "Enter your name"; $("usersErr").hidden = false; $("loginName").focus(); return; }
+  loginUser = { name }; pinVal = ""; drawPin(); $("pinErr").hidden = true;
+  $("loginSub").textContent = "Enter your PIN";
   $("loginUsers").hidden = true; $("loginPin").hidden = false;
+  $("loginName").blur();
 }
+$("nameGo").onclick = pickUser;
+$("loginName").addEventListener("keydown", e => { if (e.key === "Enter") pickUser(); });
+$("loginName").addEventListener("input", () => { $("usersErr").hidden = true; });
 function drawPin() {
   const d = $("pinDots"); d.innerHTML = "";
   for (let i = 0; i < 6; i++) d.append(h("i", { class: i < pinVal.length ? "on" : "" }));
@@ -2568,7 +2573,7 @@ async function doLogin() {
   if (loggingIn) return; loggingIn = true;
   const btn = $("pinGo"); btn.disabled = true; $("pinErr").hidden = true;
   try {
-    const r = await rpc("login", { p_user_id: loginUser.id, p_pin: pinVal });
+    const r = await rpc("login_name", { p_name: loginUser.name, p_pin: pinVal });
     if (!r.ok) throw new Error(r.error);
     session = { token: r.token, user: r.user, loginAt: Date.now() }; save(LS_SESSION, session);
     if (db.me && db.me.id !== r.user.id) db = emptyDb(); // someone else used this phone before: start clean
@@ -2667,7 +2672,7 @@ $("cfgBtn").onclick = () => db.config && settingsSheet();
 $("shareLink").onclick = shareBookLink;
 $("reloadAll").onclick = async () => { await sync(true); toast("All data reloaded"); };
 $("pinGo").onclick = doLogin;
-$("pinBack").onclick = () => showLogin();
+$("pinBack").onclick = () => showLogin(null, true);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   if (session && staffMode()) sync();
