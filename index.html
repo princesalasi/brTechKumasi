@@ -311,7 +311,9 @@ details.f[open] > summary { margin-bottom: 12px; }
 .pill { flex: none; border: 0; border-radius: 20px; padding: 8px 15px; font-size: 15px; font-weight: 600; background: var(--card); color: var(--text); box-shadow: var(--shadow); cursor: pointer; display: flex; align-items: center; gap: 7px; letter-spacing: 0; }
 .pill i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 /* booking page: every category stays in view; pills wrap onto the next line when a row is full */
-#bkCats { flex-wrap: wrap; overflow: visible; margin: 0 0 12px; padding: 2px 0 4px; }
+#bkCats { flex-wrap: wrap; overflow: visible; gap: 6px; margin: 0 0 12px; padding: 2px 0 4px; }
+/* slightly smaller buttons that stretch to fill each row, so they take as few rows as possible and leave no gaps */
+#bkCats .pill { flex: 1 1 auto; justify-content: center; padding: 7px 10px; font-size: 14px; gap: 6px; }
 #bkStep1 { margin-top: 16px; }
 .pill[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); }
 .svc { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; text-align: left; padding: 13px 16px; cursor: pointer; position: relative; }
