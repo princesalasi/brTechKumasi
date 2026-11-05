@@ -298,8 +298,8 @@ details.f[open] > summary { margin-bottom: 12px; }
 
 /* ---------- customer booking page ---------- */
 .bookmain { padding-bottom: calc(env(safe-area-inset-bottom) + 120px); }
-.hero { text-align: center; padding: 28px 0 8px; }
-.hero .logo { margin-bottom: 14px; }
+.hero { text-align: center; padding: 8px 0 4px; }
+.hero .logo { margin-bottom: 10px; }
 .hero h1 { font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; margin: 0; }
 .hero p { color: var(--text2); margin: 6px 0 0; font-size: 17px; }
 .step { margin-top: 26px; transition: opacity 240ms; }
@@ -310,6 +310,9 @@ details.f[open] > summary { margin-bottom: 12px; }
 .pills::-webkit-scrollbar { display: none; }
 .pill { flex: none; border: 0; border-radius: 20px; padding: 8px 15px; font-size: 15px; font-weight: 600; background: var(--card); color: var(--text); box-shadow: var(--shadow); cursor: pointer; display: flex; align-items: center; gap: 7px; letter-spacing: 0; }
 .pill i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+/* booking page: every category stays in view; pills wrap onto the next line when a row is full */
+#bkCats { flex-wrap: wrap; overflow: visible; margin: 0 0 12px; padding: 2px 0 4px; }
+#bkStep1 { margin-top: 16px; }
 .pill[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); }
 .svc { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; text-align: left; padding: 13px 16px; cursor: pointer; position: relative; }
 .svc + .svc::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
