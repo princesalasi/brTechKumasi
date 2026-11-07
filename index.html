@@ -169,6 +169,10 @@ main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) 
 .tag.warn { background: var(--orange-bg); color: var(--orange-ink); }
 .tag.tint { background: var(--fill); color: var(--tint-text); }
 .day { font-size: 13px; text-transform: uppercase; color: var(--text2); margin: 22px 16px 7px; letter-spacing: .02em; display: flex; justify-content: space-between; }
+/* History: each day folds open and closed */
+.dayfold > summary.day { min-height: 0; margin-bottom: 7px; padding: 6px 0; }
+.dayfold:not([open]) > summary.day { margin-bottom: 0; }
+.dayfold > summary.day .r { display: flex; align-items: center; gap: 8px; }
 .empty { text-align: center; color: var(--text2); padding: 22px 12px; font-size: 15px; }
 
 /* ---------- buttons, fields ---------- */
@@ -572,7 +576,7 @@ details.f[open] > summary { margin-bottom: 12px; }
       <div class="field"><label for="tPeriod">Period</label>
         <select id="tPeriod"><option value="7">Last 7 days</option><option value="28" selected>Last 4 weeks</option><option value="84">Last 12 weeks</option><option value="365">Last 12 months</option><option value="month">This month</option><option value="year">This year</option><option value="all">All time</option><option value="custom">Custom dates</option></select></div>
       <div class="field"><label for="tStep">Show per</label>
-        <select id="tStep"><option value="day">Day</option><option value="week" selected>Week</option><option value="month">Month</option></select></div>
+        <select id="tStep"><option value="day" selected>Day</option><option value="week">Week</option><option value="month">Month</option></select></div>
       <div class="rows daterows full" id="tCustom" hidden>
         <div class="rowf"><label for="tFrom">From</label><input id="tFrom" type="date"></div>
         <div class="rowf"><label for="tTo">To</label><input id="tTo" type="date"></div>
@@ -1624,6 +1628,8 @@ function filtered(D) {
     .sort((a, b) => b.day.localeCompare(a.day) || b.at.localeCompare(a.at));
 }
 function fillSelect(sel, opts) { const cur = sel.value; sel.innerHTML = ""; sel.append(h("option", { value: "" }, "All"), ...opts.map(([v, t]) => h("option", { value: v }, t))); sel.value = cur; }
+const CHEV_SVG = '<svg class="ev-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+let histOpen = null; // days opened in History, kept while the app is open
 function renderHistory(D) {
   fillSelect($("fCat"), CAT_KEYS.map(c => [c, CATS[c]]));
   fillSelect($("fStaff"), db.users.map(u => [String(u.id), u.name]));
@@ -1640,12 +1646,18 @@ function renderHistory(D) {
   const box = $("histList"); box.innerHTML = "";
   if (!list.length) { box.append(h("div", { class: "empty" }, "No entries.")); $("histMore").hidden = true; return; }
   let lastDay = null, group = null;
+  if (histOpen === null) histOpen = new Set([list[0].day]); // the newest day starts open, older days closed
   list.slice(0, histLimit).forEach(it => {
     if (it.day !== lastDay) {
       lastDay = it.day;
-      const dayInc = list.filter(x => x.day === it.day && x.type === "sale" && !x.undone).reduce((a, x) => a + cents(x.r.amount), 0);
-      box.append(h("div", { class: "day" }, h("span", null, relDay(it.day)), dayInc ? h("span", null, money(fromCents(dayInc))) : null));
-      group = h("div", { class: "group" }); box.append(group);
+      const day = it.day, n = list.filter(x => x.day === day).length;
+      const dayInc = list.filter(x => x.day === day && x.type === "sale" && !x.undone).reduce((a, x) => a + cents(x.r.amount), 0);
+      const fold = h("details", { class: "fold dayfold" },
+        h("summary", { class: "day" }, h("span", null, relDay(day) + " · " + n),
+          h("span", { class: "r" }, dayInc ? money(fromCents(dayInc)) : null, h("span", { html: CHEV_SVG }))));
+      fold.open = histOpen.has(day);
+      fold.addEventListener("toggle", () => { if (fold.open) histOpen.add(day); else histOpen.delete(day); });
+      group = h("div", { class: "group" }); fold.append(group); box.append(fold);
     }
     group.append(it.type === "sale" ? saleEl(it.r, D, { undo: true, tap: true }) : it.type === "appointment" ? apptLogEl(it.r, D, true) : changeEl(it.r, D, true));
   });
@@ -1690,8 +1702,8 @@ function bucketTitle(key, step) {
   return "Week " + key.split("-W")[1] + ", " + key.split("-W")[0];
 }
 let lastTrend = null;
-let incomeChart = "bar"; // remembered on this device
-try { if (localStorage.getItem("browtech.incomeChart") === "line") incomeChart = "line"; } catch (e) {}
+let incomeChart = "line"; // line by default; a change is remembered on this device
+try { if (localStorage.getItem("browtech.incomeChart2") === "bar") incomeChart = "bar"; } catch (e) {}
 function renderTrends(D) {
   const per = $("tPeriod").value, step = $("tStep").value;
   let end = today(), start;
@@ -2639,7 +2651,7 @@ $("btnBook").onclick = () => bookSheet();
 $("incomeType").append(seg({ bar: "Bars", line: "Line" }, incomeChart, v => {
   if (v === incomeChart) return;
   incomeChart = v;
-  try { localStorage.setItem("browtech.incomeChart", v); } catch (e) {}
+  try { localStorage.setItem("browtech.incomeChart2", v); } catch (e) {}
   render();
 }));
 $("wkPay").onclick = walkinPay;
