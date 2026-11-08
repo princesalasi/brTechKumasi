@@ -124,7 +124,7 @@ create table if not exists browtech.appt_changes (
   note           text
 );
 alter table browtech.appt_changes drop constraint if exists appt_changes_action_check;
-alter table browtech.appt_changes add constraint appt_changes_action_check check (action in ('confirmed','declined','moved','cancelled','no-show'));
+alter table browtech.appt_changes add constraint appt_changes_action_check check (action in ('confirmed','declined','moved','cancelled','no-show','done'));
 create index if not exists appt_changes_a on browtech.appt_changes(appointment_id);
 create index if not exists appt_changes_d on browtech.appt_changes(new_date);
 
@@ -688,14 +688,15 @@ begin
   return json_build_object('ok', true, 'id', new_id);
 end $$;
 
--- Confirm / decline an online request, move, cancel or mark no-show.
--- p_action: 'confirmed' | 'declined' | 'moved' | 'cancelled' | 'no-show'
+-- Confirm / decline an online request, move, cancel, mark no-show or mark done.
+-- p_action: 'confirmed' | 'declined' | 'moved' | 'cancelled' | 'no-show' | 'done'
+-- 'done' records no money: the payment is entered as a walk-in, so it isn't counted twice. Who did it = who marked it done.
 create or replace function public.change_appointment(p_token uuid, p_id bigint, p_action text, p_date date, p_time time, p_staff_id int, p_note text) returns json
 language plpgsql security definer set search_path = browtech, public as $$
 declare u browtech.users; a record; new_id bigint;
 begin
   u := browtech.me(p_token);
-  if p_action is null or p_action not in ('confirmed','declined','moved','cancelled','no-show') then raise exception 'Unknown change'; end if;
+  if p_action is null or p_action not in ('confirmed','declined','moved','cancelled','no-show','done') then raise exception 'Unknown change'; end if;
   perform browtech.lock_all();
   select * into a from browtech.appt_now(p_id);
   if a.status not in ('booked','requested') then raise exception 'This appointment is already %', a.status; end if;
@@ -733,13 +734,13 @@ begin
     select user_id into owner from browtech.appointments where id = p_id;
     if not found then raise exception 'Entry not found'; end if;
     select * into a from browtech.appt_now(p_id);
-    if a.status = 'done' then raise exception 'This appointment was marked done. Undo the service entry first.'; end if;
+    if a.status = 'done' then raise exception 'This appointment was marked done. Undo “done” first.'; end if;
   else
     select * into c from browtech.appt_changes where id = p_id;
     if not found then raise exception 'Entry not found'; end if;
     owner := c.user_id;
     select * into a from browtech.appt_now(c.appointment_id);
-    if a.status in ('done','undone') then raise exception 'This appointment is %. Undo that first.', a.status; end if;
+    if a.status = 'undone' or (a.status = 'done' and c.action <> 'done') then raise exception 'This appointment is %. Undo that first.', a.status; end if;
     if exists (select 1 from browtech.appt_changes x where x.appointment_id = c.appointment_id and x.id > c.id
                 and not browtech.is_undone('change', x.id)) then
       raise exception 'There is a newer change on this appointment. Undo that one first.';
