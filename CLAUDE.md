@@ -7,6 +7,7 @@ Built to match the owner's earlier app `princesalasi/sakal_stocks` (same structu
 One static page (`index.html`, no build step, no libraries) on GitHub Pages: https://princesalasi.github.io/brTechKumasi/. Customers get https://www.btkumasi.com/ (`SITE` in `index.html`); links sent from the app always use it.
 
 Staff login: type the name, then the 6-digit PIN (`login_name`). Names are never listed on the login screen, so customers who tap Staff can't see who works here.
+Super admin (`users.is_super`, set for "prince"): hidden from everyone else. Other admins and staff do not see them in Staff or in the activity log, and cannot reset their PIN, change their admin rights or deactivate them. The super admin sees everyone. Enforced in `get_state`, `reset_pin`, `set_user_active` and `set_admin`.
 Data in Supabase (free plan), project `bgfuyharbxpzdtdgaakv` (URL + publishable key in `config.js`). The website only calls SQL functions (RPC); tables live in a private schema `browtech`.
 
 Booking page gallery: a strip of style ideas for the chosen category, kept in `browtech.gallery`. Admins change it in Settings > Gallery photos (add, remove, hold and drag, 12 per category). The phone shrinks uploads, which are stored in the database as a small thumbnail plus a larger image fetched on tap. Older rows point to files in `gallery/` or Pexels photos. There is no built-in fallback list: when the database can't answer, the strip stays empty rather than show old photos.
