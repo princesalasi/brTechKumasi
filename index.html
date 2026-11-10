@@ -594,7 +594,7 @@ div.total b { font-size: 22px; color: var(--text); letter-spacing: -0.02em; font
     <div id="trendsBody">
       <div class="tiles" id="tTiles"></div>
       <div class="card"><div class="chart-head"><h2>Income</h2><div id="incomeType"></div></div><div class="chart-wrap" id="chIncome"></div></div>
-      <div class="card"><h2>Services done</h2><div class="chart-wrap" id="chCount"></div></div>
+      <div class="card"><div class="chart-head"><h2>Services done</h2><div id="countType"></div></div><div class="chart-wrap" id="chCount"></div></div>
       <div class="card"><h2>By category</h2><div id="tCats"></div></div>
       <div class="card"><h2>By staff</h2><div id="tStaff"></div></div>
       <div class="card"><h2>Payment</h2><div id="tPay"></div></div>
@@ -1723,6 +1723,8 @@ function bucketTitle(key, step) {
 let lastTrend = null;
 let incomeChart = "line"; // line by default; a change is remembered on this device
 try { if (localStorage.getItem("browtech.incomeChart2") === "bar") incomeChart = "bar"; } catch (e) {}
+let countChart = "line"; // Services done: line by default, bars as the second choice; remembered on this device
+try { if (localStorage.getItem("browtech.countChart") === "bar") countChart = "bar"; } catch (e) {}
 function renderTrends(D) {
   const per = $("tPeriod").value, step = $("tStep").value;
   let end = today(), start;
@@ -1752,7 +1754,7 @@ function renderTrends(D) {
   const total = sales.reduce((a, s) => a + cents(s.amount), 0);
   const labels = keys.map(k => bucketLabel(k, step)), titles = keys.map(k => bucketTitle(k, step));
   drawChart($("chIncome"), { type: incomeChart, labels, titles, series: [{ name: "Income (GH₵)", color: "var(--money)", values: inc.map(fromCents) }], fmt: v => money(v), aria: "Income" });
-  drawChart($("chCount"), { type: "bar", labels, titles, series: [{ name: "Services", color: "var(--c-lashes)", values: cnt }], fmt: v => nf.format(v) + (v === 1 ? " service" : " services"), aria: "Services done" });
+  drawChart($("chCount"), { type: countChart, labels, titles, series: [{ name: "Services", color: "var(--c-lashes)", values: cnt }], fmt: v => nf.format(v) + (v === 1 ? " service" : " services"), aria: "Services done" });
   // tiles
   const noShow = appts.filter(st => st.status === "no-show").length;
   const tiles = [["Income", money(fromCents(total))], ["Services done", nf.format(sales.length)], ["Average per service", sales.length ? money(Math.round(total / sales.length) / 100) : "–"], ["No-shows", nf.format(noShow)]];
@@ -2668,10 +2670,16 @@ function startApp() {
 
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 $("btnBook").onclick = () => bookSheet();
-$("incomeType").append(seg({ bar: "Bars", line: "Line" }, incomeChart, v => {
+$("incomeType").append(seg({ line: "Line", bar: "Bars" }, incomeChart, v => {
   if (v === incomeChart) return;
   incomeChart = v;
   try { localStorage.setItem("browtech.incomeChart2", v); } catch (e) {}
+  render();
+}));
+$("countType").append(seg({ line: "Line", bar: "Bars" }, countChart, v => {
+  if (v === countChart) return;
+  countChart = v;
+  try { localStorage.setItem("browtech.countChart", v); } catch (e) {}
   render();
 }));
 $("wkPay").onclick = walkinPay;
