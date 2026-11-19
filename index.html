@@ -1533,12 +1533,23 @@ function confirmSheet(st) {
     h("div", { class: "rows" },
       h("div", { class: "rowf" }, h("label", { for: "cStaff" }, "With"), staff),
       h("div", { class: "rowf" }, h("label", { for: "cNote" }, "Note"), note)),
-    h("p", { class: "hint" }, "After confirming, tap “WhatsApp” in the message at the bottom to tell the customer.")
+    st.a.phone ? h("p", { class: "hint" }, "Next you can send the confirmation to the customer on WhatsApp.") : null
   ], "Confirm", async () => {
     await call("change_appointment", { p_id: st.a.id, p_action: "confirmed", p_date: null, p_time: null, p_staff_id: staff.value ? +staff.value : null, p_note: note.value });
     await sync();
-    toast("Confirmed", 9000, st.a.phone ? "WhatsApp" : null, st.a.phone ? () => openWhatsApp(st, "confirmed") : null);
+    const done = Object.assign({}, st, { staff: staff.value ? +staff.value : st.staff });
+    if (st.a.phone) setTimeout(() => sentSheet(done), 0); else toast("Confirmed");
   }, { focus: false });
+}
+// After confirming: a real link (not window.open), so phones never block it
+function sentSheet(st) {
+  let s;
+  const link = h("a", { class: "btn wa", href: waLink(st.a.phone, waText(st, "confirmed")), target: "_blank", rel: "noopener", onclick: () => setTimeout(() => s.close(), 300) },
+    h("span", { html: WA_SVG }), "Send confirmation on WhatsApp");
+  s = sheet("Confirmed", [
+    h("p", { class: "small muted", style: "margin:-6px 4px 14px" }, st.a.customer + " · B" + st.a.id + " · " + relDay(st.date) + " " + st.time + " · " + st.a.phone),
+    link
+  ], null, null);
 }
 function declineSheet(st) {
   const note = h("input", { id: "dNote", autocomplete: "off", placeholder: "e.g. fully booked" });
