@@ -765,6 +765,7 @@ function isoWeek(d) {
   return { week: Math.ceil(((t - y0) / 86400000 + 1) / 7), year: t.getUTCFullYear() };
 }
 const niceDay = s => { const d = fromISO(s); return d ? d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : s; };
+const fullDay = s => { const d = fromISO(s); return d ? d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : s; }; // with the year
 const longDay = s => { const d = fromISO(s); return d ? d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : s; };
 const shortDay = s => { const d = fromISO(s); return d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : s; };
 const dayNoYear = s => { const d = fromISO(s); if (!d) return s; return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: s.slice(0, 4) === today().slice(0, 4) ? undefined : "numeric" }); };
@@ -1461,9 +1462,14 @@ function bookSheet(presetTime) {
 }
 
 /* ---------- appointment details ---------- */
+// "14:30" → "2:30 pm" for messages to customers
+const ampm = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ""); if (!m) return t; const hh = +m[1]; return (hh % 12 || 12) + ":" + m[2] + (hh < 12 ? " am" : " pm"); };
 function waText(st, kind) {
-  const a = st.a, when = longDay(st.date) + " at " + st.time;
-  if (kind === "confirmed") return "Hello " + a.customer + ", your appointment at BrowTech Kumasi for " + a.service_name + " on " + when + " is confirmed. See you soon!";
+  const a = st.a, when = longDay(st.date) + " at " + ampm(st.time);
+  // confirmed: name, booking number, date and time each on their own line; several services are listed one per line
+  const names = Array.isArray(a.services) && a.services.length > 1 ? a.services.map(x => x.name) : null;
+  if (kind === "confirmed") return ["Hello " + a.customer + ", your appointment at BrowTech Kumasi is confirmed.", "",
+    "Booking number: B" + a.id, "Date: " + fullDay(st.date), "Time: " + ampm(st.time), ...(names ? ["Services:", ...names.map(n => "• " + n)] : ["Service: " + a.service_name]), "", "Thank you for booking. We look forward to seeing you."].join("\n");
   if (kind === "declined") return "Hello " + a.customer + ", thank you for your request. Sorry, we can't take " + a.service_name + " on " + when + ". Please choose another time here: " + bookLink();
   if (kind === "moved") return "Hello " + a.customer + ", your appointment at BrowTech Kumasi for " + a.service_name + " is now on " + when + ".";
   if (kind === "reminder") return "Hello " + a.customer + ", a reminder of your appointment at BrowTech Kumasi for " + a.service_name + " on " + when + ". See you soon!";
