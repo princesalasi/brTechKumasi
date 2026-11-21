@@ -900,7 +900,7 @@ const MOVE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>';
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 const catIco = (cat, html) => h("div", { class: "ico c-" + (CATS[cat] ? cat : "other"), style: "background:var(--c-" + (CATS[cat] ? cat : "other") + ")", "aria-hidden": "true", html: html || null }, html ? null : (CATS[cat] || "?").slice(0, 2));
-function undoneLine(u, D) { return u ? h("div", { class: "sub why" }, "Undone: " + u.reason + " – " + (D.userName[u.user_id] || "?") + ", " + stamp(u.logged_at)) : null; }
+function undoneLine(u, D) { return u ? h("div", { class: "sub why" }, "Undone" + (u.reason ? ": " + u.reason : "") + " – " + (D.userName[u.user_id] || "?") + ", " + stamp(u.logged_at)) : null; }
 
 function saleEl(s, D, opts) {
   opts = opts || {};
@@ -1622,9 +1622,8 @@ function undoSheet(target, id, preview) {
     h("p", { class: "small muted" }, target === "sale" ? "The entry stays in the log, shown in red, and no longer counts as income. If the amount or service was wrong, enter it again correctly afterwards." :
       target === "appointment" ? "The booking stays in the log, shown in red, and disappears from the appointment list." :
       "The change stays in the log, shown in red, and the appointment goes back to how it was before."),
-    field("What was wrong? (required)", why)],
+    field("What was wrong? (optional)", why)],
     "Undo", async () => {
-      if (!why.value.trim()) { nudge(why); throw new Error("Write what was wrong"); }
       await call("undo_entry", { p_target: target, p_id: id, p_reason: why.value });
       await sync(); toast("Undone – shown in red in History");
     }, { danger: true });
@@ -1710,7 +1709,7 @@ function exportCSV() {
   const lines = [head.map(cell).join(sep)];
   list.forEach(it => {
     const u = it.undone, r = it.r;
-    const undoCols = [u ? "Undone" : "OK", u ? u.reason : "", u ? D.userName[u.user_id] || "" : "", u ? stampCSV(u.logged_at) : ""];
+    const undoCols = [u ? "Undone" : "OK", u ? u.reason || "" : "", u ? D.userName[u.user_id] || "" : "", u ? stampCSV(u.logged_at) : ""];
     if (it.type === "sale") lines.push(["S" + r.id, "Service done", stampCSV(r.logged_at), r.entry_date, "", "", CATS[r.category] || r.category, r.service_name, r.customer, r.phone, amt(r.amount), amt(r.list_price), PAY[r.payment], D.userName[r.staff_id], D.userName[r.user_id], r.appointment_id ? "From booking B" + r.appointment_id : "", r.note, ...undoCols].map(cell).join(sep));
     else if (it.type === "appointment") lines.push(["B" + r.id, r.source === "online" ? "Online request" : "Booking", stampCSV(r.logged_at), isoInTZ(r.logged_at), r.appt_date, hm(r.appt_time), CATS[r.category] || r.category, r.service_name, r.customer, r.phone, "", "", "", staffName(D, r.staff_id), r.source === "online" ? "Customer (online)" : D.userName[r.user_id], "Now: " + STATUS[D.appt[r.id].status], r.note, ...undoCols].map(cell).join(sep));
     else { const a = db.appts.find(x => x.id === r.appointment_id) || {};

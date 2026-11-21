@@ -135,9 +135,13 @@ create table if not exists browtech.undos (
   user_id   int not null references browtech.users(id),
   target    text not null check (target in ('sale','appointment','change')),
   target_id bigint not null,
-  reason    text not null check (length(btrim(reason)) between 1 and 300),
+  reason    text check (reason is null or length(btrim(reason)) between 1 and 300),
   unique (target, target_id)
 );
+-- The reason is optional (null = none given)
+alter table browtech.undos alter column reason drop not null;
+alter table browtech.undos drop constraint if exists undos_reason_check;
+alter table browtech.undos add constraint undos_reason_check check (reason is null or length(btrim(reason)) between 1 and 300);
 
 -- Activity log: people added, PINs changed, prices and settings changed, lockouts ...
 create table if not exists browtech.events (
@@ -723,7 +727,6 @@ language plpgsql security definer set search_path = browtech, public as $$
 declare u browtech.users; c browtech.appt_changes; a record; owner int;
 begin
   u := browtech.me(p_token);
-  if p_reason is null or btrim(p_reason) = '' then raise exception 'Write why this entry is wrong'; end if;
   if p_target is null or p_target not in ('sale','appointment','change') then raise exception 'Unknown entry type'; end if;
   perform browtech.lock_all();
   if browtech.is_undone(p_target, p_id) then raise exception 'This entry was already undone'; end if;
@@ -747,7 +750,7 @@ begin
     end if;
   end if;
   if not u.is_admin and owner is distinct from u.id then raise exception 'You can only undo your own entries. Ask an admin.'; end if;
-  insert into browtech.undos(user_id, target, target_id, reason) values (u.id, p_target, p_id, left(btrim(p_reason), 300));
+  insert into browtech.undos(user_id, target, target_id, reason) values (u.id, p_target, p_id, nullif(left(btrim(coalesce(p_reason, '')), 300), ''));
   return json_build_object('ok', true);
 end $$;
 

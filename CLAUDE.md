@@ -25,7 +25,7 @@ Discounts: optional GH₵ amount off the whole payment, on the walk-in page. It 
 
 WhatsApp requests: after booking, the customer taps a button that opens WhatsApp with the request ready for the shop's number (from settings), and must tap send; websites cannot send it by themselves. The message holds a link (`#staff/<appointment id>`) that opens that appointment in the staff app, after the PIN if needed. Without a WhatsApp number in settings the button is not shown.
 
-Rules: every entry is permanent (triggers block update/delete). Mistakes → Undo with a required reason (row in `browtech.undos`); undone entries are shown in red. Appointment status is derived (`browtech.appt_now`): requested / booked / done / declined / cancelled / no-show / undone.
+Rules: every entry is permanent (triggers block update/delete). Mistakes → Undo with an optional reason (row in `browtech.undos`, reason null when none given); undone entries are shown in red. Appointment status is derived (`browtech.appt_now`): requested / booked / done / declined / cancelled / no-show / undone.
 
 ## Files
 - `index.html` – the whole app (CSS + JS inline). Design: Bubblegum Pink (#f05da3) with the logo's rose gold, light only with page background #FAF4F6 (no dark mode, at the owner's request), Apple-style (sheets with drag-to-close, translucent tab bar, reduced-motion support).
