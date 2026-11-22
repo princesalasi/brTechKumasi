@@ -2361,12 +2361,17 @@ const bkNames = list => list.map(x => x.name).join(" + ");
 // The address customers get, wherever the app itself is opened.
 const SITE = "https://www.btkumasi.com/";
 const bookLink = () => SITE;
+// Phone number for wa.me: digits with the country code. Ghana (233) is added only when no country code was typed.
 function waNumber(phone) {
-  let d = (phone || "").replace(/\D/g, "");
+  const raw = (phone || "").trim();
+  let d = raw.replace(/\D/g, "");
+  const intl = raw.startsWith("+") || d.startsWith("00");
   if (d.startsWith("00")) d = d.slice(2);
-  if (d.startsWith("0")) d = "233" + d.slice(1);
-  else if (d.length === 9) d = "233" + d;
-  return d;
+  if (!intl && d.startsWith("0233") && d.length >= 13) d = d.slice(1);       // 0233 24 412 3456
+  if (intl || d.startsWith("233")) return d.replace(/^2330/, "233");        // +233 (0)24 ... has no extra 0
+  if (d.startsWith("0")) return "233" + d.slice(1);                        // 024 412 3456
+  if (d.length === 9) return "233" + d;                                    // 24 412 3456
+  return d;                                                                // other country code typed without +
 }
 const WA_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2a9.8 9.8 0 0 0-8.4 14.8L2.2 21.8l4.9-1.3A9.8 9.8 0 1 0 12 2.2zm0 17.8a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.6.3 2.7 2.7 0 0 0-.9 2c0 1.2.9 2.4 1 2.5.1.2 1.7 2.6 4.2 3.7 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.5-.4z"/></svg>';
 const waLink = (phone, text) => "https://wa.me/" + waNumber(phone) + (text ? "?text=" + encodeURIComponent(text) : "");
